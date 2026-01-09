@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF - Monitoramento Tático</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Grid específico para esta página que se adapta via CSS */
+        .grid-escalamento {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        /* Ajuste fino para os botões da tabela */
+        .btn-sm { padding: 5px 10px; height: 35px; font-size: 0.85rem; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">🚓 SGF | Operações</div>
+        <div class="menu">
+            <a href="index.html">Visão Geral</a>
+            <a href="cadastro.html">Frota</a>
+            <a href="os.html">Ordens</a>
+            <a href="escalamento.html" class="active">Operações</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="card-container-main">
+            <h2>Ativação de Guarnição</h2>
+            <form id="escalamentoForm">
+                <div class="grid-escalamento" style="width: 100%;">
+                    <div>
+                        <label>Viatura Disponível</label>
+                        <select id="selectVtr" class="input-padrao" required></select>
+                    </div>
+                    <div>
+                        <label>Ordem de Serviço (OS)</label>
+                        <select id="selectOS" class="input-padrao" required></select>
+                    </div>
+                    
+                    <div>
+                        <label>RG Comandante</label>
+                        <input type="text" id="rgComandante" placeholder="RG do Responsável" class="input-padrao" required>
+                    </div>
+                    <div>
+                        <label>Telefone Contato</label>
+                        <input type="tel" id="telComandante" placeholder="(21) 90000-0000" class="input-padrao" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="margin-top: 25px; width: 100%;">
+                    Ativar Guarnição e Iniciar Monitoramento
+                </button>
+            </form>
+        </div>
+
+        <div class="card-container-main" style="margin-top: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Painel Tático (Tempo Real)</h2>
+                <span style="font-size: 0.8rem; color: #666;">Atualização: Automática (30s)</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nº OS</th>
+                            <th>Recurso / Comando</th>
+                            <th>Posição Prevista</th>
+                            <th>Status Tático</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaMonitoramento"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <script src="escalamento.js"></script>
+</body>
+</html>

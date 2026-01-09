@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF - Dashboard Executivo</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <style> .hidden { display: none; } </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">🚓 SGF | Segurança Pública</div>
+        <div class="menu">
+            <a href="index.html" class="active">Visão Geral</a>
+            <a href="cadastro.html">Frota</a>
+            <a href="os.html">Ordens</a>
+            <a href="escalamento.html">Operações</a>
+        </div>
+    </nav>
+
+    <main>
+        <h1>Painel de Controle Operacional</h1>
+        <p style="color: #666; margin-bottom: 30px;">Visão sintética dos recursos e operações ativas.</p>
+        
+        <div class="dashboard-grid">
+            <div class="card-dash" onclick="toggleSecao('vtrs')">
+                <h3>Frota Cadastrada</h3>
+                <p id="totalViaturas">0</p>
+                <small>Clique para detalhar</small>
+            </div>
+            
+            <div class="card-dash" onclick="toggleSecao('ordens')">
+                <h3>OS Planejadas</h3>
+                <p id="totalOS">0</p>
+                <small>Clique para detalhar</small>
+            </div>
+
+            <div class="card-dash" onclick="toggleSecao('escalas')">
+                <h3>Efetivo em Campo</h3>
+                <p id="totalEscalas">0</p>
+                <small>Monitoramento Tempo Real</small>
+            </div>
+        </div>
+
+        <div id="secaoVtrs" class="card-container-main hidden">
+            <h2>Detalhamento da Frota</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Prefixo</th><th>Placa</th><th>Rádio</th></tr></thead>
+                    <tbody id="listaVtrsIndex"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="secaoOrdens" class="card-container-main hidden">
+            <h2>Detalhamento de Ordens</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Nº OS</th><th>Missão</th><th>Turno</th></tr></thead>
+                    <tbody id="listaOSIndex"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="secaoEscalas" class="card-container-main hidden">
+            <h2>Equipes Ativas (Monitoramento)</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Vtr</th><th>Comandante</th><th>Status</th></tr></thead>
+                    <tbody id="listaEscalasIndex"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
+            const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
+            const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
+
+            document.getElementById('totalViaturas').innerText = viaturas.length;
+            document.getElementById('totalOS').innerText = ordens.length;
+            document.getElementById('totalEscalas').innerText = escalas.length;
+
+            const tbVtr = document.getElementById('listaVtrsIndex');
+            viaturas.forEach(v => { tbVtr.innerHTML += `<tr><td>${v.prefixo}</td><td>${v.placa}</td><td>${v.radio}</td></tr>`; });
+
+            const tbOS = document.getElementById('listaOSIndex');
+            ordens.forEach(os => { tbOS.innerHTML += `<tr><td>${os.numero}</td><td>${os.nomeOS || 'S/N'}</td><td>${os.inicioGeral} - ${os.terminoGeral}</td></tr>`; });
+
+            const tbEscala = document.getElementById('listaEscalasIndex');
+            escalas.forEach(e => { tbEscala.innerHTML += `<tr><td>${e.prefixo}</td><td>${e.rgComandante}</td><td>Ativa</td></tr>`; });
+        });
+
+        function toggleSecao(tipo) {
+            document.querySelectorAll('.card-container-main').forEach(d => d.classList.add('hidden'));
+            const ids = { 'vtrs': 'secaoVtrs', 'ordens': 'secaoOrdens', 'escalas': 'secaoEscalas' };
+            document.getElementById(ids[tipo]).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

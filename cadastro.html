@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF - Gestão de Frota</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="logo">🚓 SGF | Frota</div>
+        <div class="menu">
+            <a href="index.html">Visão Geral</a>
+            <a href="cadastro.html" class="active">Frota</a>
+            <a href="os.html">Ordens</a>
+            <a href="escalamento.html">Operações</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="card-container-main">
+            <h2 id="tituloForm">Cadastrar Nova Viatura</h2>
+            <form id="viaturaForm">
+                <input type="hidden" id="editIndex" value="-1">
+                
+                <div class="row">
+                    <div class="col-1">
+                        <label>Prefixo Operacional</label>
+                        <input type="text" id="prefixo" class="input-padrao" placeholder="Ex: 80-1234" required>
+                    </div>
+                    <div class="col-1">
+                        <label>Placa Oficial</label>
+                        <input type="text" id="placa" class="input-padrao" placeholder="ABC-1234" required>
+                    </div>
+                    <div class="col-1">
+                        <label>Identificador Rádio</label>
+                        <input type="text" id="radio" class="input-padrao" placeholder="ID Digital" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <button type="submit" id="btnSalvar" class="btn-primary" style="width: 100%;">Salvar Registro</button>
+                    <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; width: 100%; margin-top: 10px;" onclick="cancelarEdicao()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-container-main" style="margin-top: 30px;">
+            <h2>Frota Cadastrada</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr><th>Prefixo</th><th>Placa</th><th>Rádio</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody id="listaViaturas"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
