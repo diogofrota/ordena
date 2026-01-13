@@ -9,24 +9,70 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
-        /* Grid específico para esta página que se adapta via CSS */
         .grid-escalamento {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        /* Ajuste fino para os botões da tabela */
-        .btn-sm { padding: 5px 10px; height: 35px; font-size: 0.85rem; margin-right: 5px; }
+        
+        .box-integrante {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-add {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .btn-remove {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            height: 42px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Ajuste para inputs ficarem na mesma linha nos integrantes */
+        .row-integrante {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-escalamento, .row-integrante { grid-template-columns: 1fr; flex-direction: column; }
+            .box-integrante { flex-direction: column; align-items: stretch; }
+            .btn-remove { width: 100%; margin-top: 5px; }
+        }
     </style>
 </head>
 <body>
     <nav>
-        <div class="logo"> ORDENA | Sistema de Gestão de Ordens de Serviço</div>
+        <div class="logo"> ORDENA | Sistema de Gestão</div>
         <div class="menu">
             <a href="index.html">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
-            <a href="os.html" class="active">Ordens de Serviço</a>
-            <a href="escalamento.html">Ativar Monitoramento</a>
+            <a href="enderecos.html">Locais</a>
+            <a href="os.html">Ordens de Serviço</a>
+            <a href="escalamento.html" class="active">Ativação</a>
+            <a href="historico.html">Histórico</a>
+
         </div>
     </nav>
 
@@ -34,7 +80,8 @@
         <div class="card-container-main">
             <h2>Ativação de Guarnição</h2>
             <form id="escalamentoForm">
-                <div class="grid-escalamento" style="width: 100%;">
+                
+                <div class="grid-escalamento" style="margin-bottom: 20px;">
                     <div>
                         <label>Viatura Disponível</label>
                         <select id="selectVtr" class="input-padrao" required></select>
@@ -43,19 +90,54 @@
                         <label>Ordem de Serviço (OS)</label>
                         <select id="selectOS" class="input-padrao" required></select>
                     </div>
-                    
-                    <div>
-                        <label>RG Comandante</label>
-                        <input type="text" id="rgComandante" placeholder="RG do Responsável" class="input-padrao" required>
-                    </div>
-                    <div>
-                        <label>Telefone Contato</label>
-                        <input type="tel" id="telComandante" placeholder="(21) 90000-0000" class="input-padrao" required>
+                </div>
+
+                <hr style="margin: 20px 0; border-top: 1px dashed #ccc;">
+
+                <h3 style="font-size: 1.1rem; color: #1a237e; margin-bottom: 10px;">Comandante da Equipe</h3>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef; margin-bottom: 20px;">
+                    <div class="row-integrante">
+                        <div style="flex: 1;">
+                            <label>Posto/Grad</label>
+                            <select id="postoCmd" class="input-padrao" required>
+                                <option value="">Selecione...</option>
+                                <option value="SD">SD</option>
+                                <option value="CB">CB</option>
+                                <option value="SGT">SGT</option>
+                                <option value="SUBTEN">SUBTEN</option>
+                                <option value="ASP">ASP</option>
+                                <option value="TEN">TEN</option>
+                                <option value="CAP">CAP</option>
+                                <option value="MAJ">MAJ</option>
+                                <option value="TC">TC</option>
+                                <option value="CEL">CEL</option>
+                            </select>
+                        </div>
+                        <div style="flex: 2;">
+                            <label>Nome de Guerra</label>
+                            <input type="text" id="nomeCmd" class="input-padrao" placeholder="Ex: Silva" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label>RG</label>
+                            <input type="text" id="rgCmd" class="input-padrao" placeholder="00.000" required>
+                        </div>
+                        <div style="flex: 1.5;">
+                            <label>Telefone</label>
+                            <input type="tel" id="telCmd" class="input-padrao" placeholder="(21) 90000-0000" required>
+                        </div>
                     </div>
                 </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="font-size: 1.1rem; color: #1a237e; margin: 0;">Integrantes Adicionais</h3>
+                    <button type="button" class="btn-add" onclick="adicionarIntegrante()">+ Adicionar Integrante</button>
+                </div>
                 
-                <button type="submit" class="btn-primary" style="margin-top: 25px; width: 100%;">
-                    Ativar Guarnição e Iniciar Monitoramento
+                <div id="listaIntegrantes">
+                    </div>
+
+                <button type="submit" class="btn-primary" style="margin-top: 25px; width: 100%; height: 50px; font-size: 1.1rem;">
+                    Ativar Guarnição e Iniciar Turno
                 </button>
             </form>
         </div>
@@ -70,10 +152,9 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Nº OS</th>
-                            <th>Recurso / Comando</th>
-                            <th>Posição Prevista</th>
-                            <th>Status Tático</th>
+                            <th>OS / Viatura</th>
+                            <th>Composição da Equipe</th>
+                            <th>Status Tático (Local Atual)</th>
                             <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>

@@ -3,157 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORDENA</title>
+    <title>ORDENA - Painel de Comando</title>
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    <style> .hidden { display: none; } </style>
+    <style>
+        .hidden { display: none; }
+        
+        /* Estilos exclusivos do Dashboard Executivo */
+        .hero-section {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section h2 { color: white; margin-bottom: 10px; font-size: 1.8rem; }
+        .hero-section p { color: rgba(255,255,255,0.8); max-width: 600px; font-size: 1.1rem; }
+
+        .system-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .dot-pulse {
+            width: 10px;
+            height: 10px;
+            background-color: #00e676;
+            border-radius: 50%;
+            box-shadow: 0 0 0 rgba(0, 230, 118, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 230, 118, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .module-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+            border-top: 4px solid transparent;
+        }
+        
+        .module-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+        .mod-blue { border-top-color: #1a237e; }
+        .mod-green { border-top-color: #28a745; }
+        .mod-cyan { border-top-color: #17a2b8; }
+
+        .module-card h3 { font-size: 1.2rem; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .module-card p { color: #666; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
+        
+        .btn-link {
+            text-decoration: none;
+            color: #1a237e;
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-link:hover { text-decoration: underline; }
+
+    </style>
 </head>
 <body>
     <nav>
-        <div class="logo">ORDENA | Sistema de Gestão de Ordens de Serviço</div>
+        <div class="logo">ORDENA | Sistema de Gestão</div>
         <div class="menu">
             <a href="index.html" class="active">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
-            <a href="enderecos.html">Locais</a> <a href="os.html">Ordens de Serviço</a>
-            <a href="escalamento.html">Ativar Monitoramento</a>
+            <a href="enderecos.html">Locais</a>
+            <a href="os.html">Ordens de Serviço</a>
+            <a href="escalamento.html">Ativação</a>
+            <a href="historico.html" >Histórico</a> 
         </div>
     </nav>
 
     <main>
-        <h1>Painel de Controle Operacional</h1>
-        <p style="color: #666; margin-bottom: 30px;">Visão sintética dos recursos e operações ativas.</p>
-        
+        <div class="hero-section">
+            <div class="system-status">
+                <div class="dot-pulse"></div>
+                Sistema Operante
+            </div>
+            <h2>ORDENA: Gestão Integrada de Operações</h2>
+            <p>Plataforma centralizada para planejamento tático, gestão de frota e monitoramento em tempo real das forças de segurança.</p>
+        </div>
+
+        <h3 style="color: #555; margin-bottom: 15px; font-size: 1.1rem;">Indicadores Operacionais (Ativos)</h3>
         <div class="dashboard-grid">
-            <div class="card-dash" onclick="toggleSecao('vtrs')">
-                <h3>Frota Cadastrada</h3>
+            <div class="card-dash" style="cursor: default; border-left-color: #1a237e;">
+                <h3>Frota Operante</h3>
                 <p id="totalViaturas">0</p>
-                <small>Clique para detalhar</small>
+                <small>Viaturas com status Ativo</small>
             </div>
             
-            <div class="card-dash" onclick="toggleSecao('locais')" style="border-left-color: #17a2b8;">
+            <div class="card-dash" style="cursor: default; border-left-color: #17a2b8;">
                 <h3>Pontos Mapeados</h3>
                 <p id="totalLocais">0</p>
-                <small>Clique para detalhar</small>
+                <small>Locais de interesse ativos</small>
             </div>
             
-            <div class="card-dash" onclick="toggleSecao('ordens')">
-                <h3>OS Planejadas</h3>
+            <div class="card-dash" style="cursor: default; border-left-color: #28a745;">
+                <h3>OS em Vigor</h3>
                 <p id="totalOS">0</p>
-                <small>Clique para detalhar</small>
+                <small>Missões planejadas (Ativas)</small>
             </div>
 
-            <div class="card-dash" onclick="toggleSecao('escalas')">
-                <h3>Efetivo em Campo</h3>
+            <div class="card-dash" style="cursor: default; border-left-color: #dc3545;">
+                <h3>Efetivo Empenhado</h3>
                 <p id="totalEscalas">0</p>
-                <small>Monitoramento Tempo Real</small>
+                <small>Guarnições ativadas agora</small>
             </div>
         </div>
 
-        <div id="secaoVtrs" class="card-container-main hidden">
-            <h2>Detalhamento da Frota</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Prefixo</th><th>Placa</th><th>Rádio</th></tr></thead>
-                    <tbody id="listaVtrsIndex"></tbody>
-                </table>
-            </div>
-        </div>
+        <hr>
 
-        <div id="secaoLocais" class="card-container-main hidden">
-            <h2>Locais e Pontos de Interesse</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Apelido</th><th>Endereço</th><th>Coordenadas</th></tr></thead>
-                    <tbody id="listaLocaisIndex"></tbody>
-                </table>
+        <h3 style="color: #555; margin-bottom: 15px; font-size: 1.1rem;">Módulos do Sistema</h3>
+        <div class="module-grid">
+            
+            <div class="module-card mod-blue">
+                <h3>📋 Planejamento Tático</h3>
+                <p>Criação detalhada de Ordens de Serviço (OS) com fracionamento de horários, geolocalização de pontos e instruções normativas para a tropa.</p>
+                <a href="os.html" class="btn-link">Gerar Nova OS &rarr;</a>
             </div>
-        </div>
 
-        <div id="secaoOrdens" class="card-container-main hidden">
-            <h2>Detalhamento de Ordens</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Nº OS</th><th>Missão</th><th>Turno</th></tr></thead>
-                    <tbody id="listaOSIndex"></tbody>
-                </table>
+            <div class="module-card mod-green">
+                <h3>📡 Monitoramento Real-Time</h3>
+                <p>Controle de ativação de guarnições e validação automática de posicionamento (GPS) versus planejamento operacional.</p>
+                <a href="escalamento.html" class="btn-link">Ver Painel Tático &rarr;</a>
             </div>
-        </div>
 
-        <div id="secaoEscalas" class="card-container-main hidden">
-            <h2>Equipes Ativas (Monitoramento)</h2>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Vtr</th><th>Comandante</th><th>Status</th></tr></thead>
-                    <tbody id="listaEscalasIndex"></tbody>
-                </table>
+            <div class="module-card mod-cyan">
+                <h3>🗺️ Inteligência Geográfica</h3>
+                <p>Mapeamento de pontos sensíveis e áreas de interesse com coordenadas precisas para suporte ao despacho de viaturas.</p>
+                <a href="enderecos.html" class="btn-link">Gerenciar Mapa &rarr;</a>
             </div>
+
         </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Carrega dados do LocalStorage
+            // 1. Carrega todos os dados
             const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
-            const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || []; // Novo
+            const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
             const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
             const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
 
-            // Atualiza os contadores nos Cards
-            document.getElementById('totalViaturas').innerText = viaturas.length;
-            document.getElementById('totalLocais').innerText = locais.length; // Novo
-            document.getElementById('totalOS').innerText = ordens.length;
+            // 2. Filtra APENAS OS ATIVOS (Correção solicitada)
+            // Viaturas: Status 'Ativa'
+            const vtrAtivas = viaturas.filter(v => v.status === 'Ativa');
+            
+            // Locais: Status 'Ativo'
+            const locaisAtivos = locais.filter(l => l.status === 'Ativo');
+            
+            // OS: Status 'Ativa'
+            const osAtivas = ordens.filter(os => os.status === 'Ativa');
+
+            // Escalas: A lista 'escalasAtivas' por natureza só contém as que estão na rua.
+            // (As finalizadas vão para 'historicoEscalas')
+
+            // 3. Atualiza a tela com os números filtrados
+            document.getElementById('totalViaturas').innerText = vtrAtivas.length;
+            document.getElementById('totalLocais').innerText = locaisAtivos.length;
+            document.getElementById('totalOS').innerText = osAtivas.length;
             document.getElementById('totalEscalas').innerText = escalas.length;
-
-            // Renderiza Tabela Viaturas
-            const tbVtr = document.getElementById('listaVtrsIndex');
-            viaturas.forEach(v => { 
-                tbVtr.innerHTML += `<tr><td>${v.prefixo}</td><td>${v.placa}</td><td>${v.radio}</td></tr>`; 
-            });
-
-            // Renderiza Tabela Locais (NOVO)
-            const tbLocais = document.getElementById('listaLocaisIndex');
-            locais.forEach(l => {
-                tbLocais.innerHTML += `
-                    <tr>
-                        <td><strong>${l.apelido}</strong></td>
-                        <td>${l.rua}, ${l.numero || 'S/N'} - ${l.bairro}</td>
-                        <td style="font-family: monospace; color: #1a237e;">${l.lat}, ${l.lng}</td>
-                    </tr>`;
-            });
-
-            // Renderiza Tabela OS
-            const tbOS = document.getElementById('listaOSIndex');
-            ordens.forEach(os => { 
-                tbOS.innerHTML += `<tr><td>${os.numero}</td><td>${os.nomeOS || 'S/N'}</td><td>${os.inicioGeral} - ${os.terminoGeral}</td></tr>`; 
-            });
-
-            // Renderiza Tabela Escalas
-            const tbEscala = document.getElementById('listaEscalasIndex');
-            escalas.forEach(e => { 
-                tbEscala.innerHTML += `<tr><td>${e.prefixo}</td><td>${e.rgComandante}</td><td>Ativa</td></tr>`; 
-            });
         });
-
-        function toggleSecao(tipo) {
-            // Esconde todas e mostra apenas a selecionada
-            document.querySelectorAll('.card-container-main').forEach(d => d.classList.add('hidden'));
-            
-            const ids = { 
-                'vtrs': 'secaoVtrs', 
-                'locais': 'secaoLocais', // Novo ID
-                'ordens': 'secaoOrdens', 
-                'escalas': 'secaoEscalas' 
-            };
-            
-            if(ids[tipo]) {
-                document.getElementById(ids[tipo]).classList.remove('hidden');
-                
-                // Scroll suave até a seção aberta (melhor experiência no celular)
-                setTimeout(() => {
-                    document.getElementById(ids[tipo]).scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 100);
-            }
-        }
     </script>
 </body>
 </html>

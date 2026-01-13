@@ -8,17 +8,48 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #1a237e;
+            color: white;
+        }
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-ativa { background: #d4edda; color: #155724; }
+        .status-inativa { background: #f8d7da; color: #721c24; }
+        
+        /* Botão Cancelar (Cinza) */
+        .btn-cancelar {
+            background-color: #6c757d !important;
+            color: white;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
     <nav>
-        <div class="logo"> ORDENA | Sistema de Gestão de Ordens de Serviço</div>
+        <div class="logo">ORDENA | Sistema de Gestão</div>
         <div class="menu">
             <a href="index.html">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
             <a href="enderecos.html">Locais</a>
             <a href="os.html" class="active">Ordens de Serviço</a>
-            <a href="escalamento.html">Ativar Monitoramento</a>
-        </div>
+            <a href="escalamento.html">Ativação</a>
+            <a href="historico.html">Histórico</a> </div>
     </nav>
 
     <main>
@@ -26,9 +57,9 @@
             <h2 id="formTitle">Nova Ordem de Serviço</h2>
             
             <div id="cabecalhoOS">
-                <div class="row">
+                <div class="row" style="align-items: flex-end;">
                     <div class="col-1">
-                        <label class="label-resumo">Nº OS</label>
+                        <label class="label-resumo">Nº OS (Automático)</label>
                         <input type="text" id="numOS" readonly class="input-padrao" style="background: #e9ecef; font-weight: bold; text-align: center;">
                     </div>
                     <div class="col-3">
@@ -60,10 +91,12 @@
                         <div class="col-2">
                             <label>Tipo de Atividade</label>
                             <select id="tipoAtividade" class="input-padrao">
+                                <option value="Preleção">Preleção</option>
                                 <option value="Patrulhamento">Patrulhamento</option>
                                 <option value="Baseamento">Baseamento</option>
                                 <option value="Intervalo">Intervalo</option>
                                 <option value="Deslocamento">Deslocamento</option>
+                                <option value="Retorno Base">Retorno Base</option>
                             </select>
                         </div>
                         <div class="col-1">
@@ -79,10 +112,8 @@
                     <div class="row" style="align-items: flex-end;">
                         <div class="col-3">
                             <label>Localização / Ponto Focal</label>
-                            
                             <input type="text" id="localAtividade" list="listaLocaisSugestao" placeholder="Digite ou selecione um local cadastrado..." class="input-padrao" autocomplete="off">
                             <datalist id="listaLocaisSugestao"></datalist>
-                            
                         </div>
                         <div class="col-1">
                             <button type="button" onclick="adicionarFracao()" class="btn-info" style="width: 100%;">
@@ -114,14 +145,23 @@
         </div>
 
         <div class="card-container-main" style="margin-top: 30px;">
-            <h2>Histórico de Ordens</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Banco de Ordens de Serviço</h2>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ver Ativas</button>
+                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Ver Histórico (Inativas)</button>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table id="tabelaOSPrincipal">
                     <thead>
                         <tr>
                             <th>Nº OS</th>
+                            <th>Data Criação</th>
                             <th>Missão</th>
-                            <th>Turno Geral</th>
+                            <th>Status</th>
                             <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>

@@ -6,16 +6,42 @@
     <title>ORDENA</title>
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos para Filtros e Status (Igual ao OS) */
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #1a237e;
+            color: white;
+        }
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-ativa { background: #d4edda; color: #155724; }
+        .status-inativa { background: #f8d7da; color: #721c24; }
+    </style>
 </head>
 <body>
     <nav>
-        <div class="logo"> ORDENA | Sistema de Gestão de Ordens de Serviço</div>
+        <div class="logo">ORDENA | Sistema de Gestão</div>
         <div class="menu">
             <a href="index.html">Dashboard</a>
-            <a href="cadastro.html">Viaturas</a>
-            <a href="os.html" class="active">Ordens de Serviço</a>
-            <a href="escalamento.html">Ativar Monitoramento</a>
-        </div>
+            <a href="cadastro.html" class="active">Viaturas</a>
+            <a href="enderecos.html">Locais</a>
+            <a href="os.html">Ordens de Serviço</a>
+            <a href="escalamento.html">Ativação</a>
+            <a href="historico.html">Histórico</a> </div>
     </nav>
 
     <main>
@@ -47,11 +73,26 @@
         </div>
 
         <div class="card-container-main" style="margin-top: 30px;">
-            <h2>Frota Cadastrada</h2>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Frota Cadastrada</h2>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ver Ativas</button>
+                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Ver Inativas</button>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table>
                     <thead>
-                        <tr><th>Prefixo</th><th>Placa</th><th>Rádio</th><th>Ações</th></tr>
+                        <tr>
+                            <th>Prefixo</th>
+                            <th>Placa</th>
+                            <th>Rádio</th>
+                            <th>Status</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
                     </thead>
                     <tbody id="listaViaturas"></tbody>
                 </table>

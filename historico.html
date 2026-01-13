@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Histórico</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <nav>
+        <div class="logo">ORDENA | Sistema de Gestão</div>
+        <div class="menu">
+            <a href="index.html">Dashboard</a>
+            <a href="cadastro.html">Viaturas</a>
+            <a href="enderecos.html">Locais</a>
+            <a href="os.html">Ordens de Serviço</a>
+            <a href="escalamento.html">Ativação</a>
+            <a href="historico.html" class="active">Histórico</a> </div>
+    </nav>
+
+    <main>
+        <div class="card-container-main">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h2>Histórico de Ativações Finalizadas</h2>
+                </div>
+            
+            <p style="color: #666; margin-bottom: 20px;">
+                Relação de todas as guarnições que já encerraram o turno, ordenadas pela data de início.
+            </p>
+
+            <div class="row">
+                <div class="col-1">
+                    <input type="text" id="filtroBusca" onkeyup="filtrarHistorico()" placeholder="Buscar por Viatura, OS ou Comandante..." class="input-padrao">
+                </div>
+            </div>
+
+            <div class="table-responsive" style="margin-top: 20px;">
+                <table id="tabelaHistorico">
+                    <thead>
+                        <tr>
+                            <th>Data / Período</th>
+                            <th>OS / Viatura</th>
+                            <th>Comando da Equipe</th>
+                            <th>Duração</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaHistorico">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="historico.js"></script>
+</body>
+</html>
