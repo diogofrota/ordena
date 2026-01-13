@@ -1,9 +1,3 @@
-Com certeza. Como este sistema foi desenvolvido como um **Protótipo de Alta Fidelidade (MVP)** rodando no navegador (Client-Side), é crucial documentar as regras de negócio para que, quando você for migrar para uma linguagem de backend (como Python, Node.js, Java) e um banco de dados real (PostgreSQL, MySQL), a lógica seja preservada.
-
-Abaixo está uma estrutura completa de **README.md** técnico. Você pode copiar e salvar esse conteúdo na raiz do seu projeto.
-
----
-
 # 🚓 ORDENA - Sistema de Gestão de Operações (SGO)
 
 > **Versão:** 1.0.0 (Protótipo/MVP)
