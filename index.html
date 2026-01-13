@@ -12,9 +12,9 @@
     <nav>
         <div class="logo">ORDENA | Sistema de Gestão de Ordens de Serviço</div>
         <div class="menu">
-           <a href="index.html">Dashboard</a>
+            <a href="index.html" class="active">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
-            <a href="os.html" class="active">Ordens de Serviço</a>
+            <a href="enderecos.html">Locais</a> <a href="os.html">Ordens de Serviço</a>
             <a href="escalamento.html">Ativar Monitoramento</a>
         </div>
     </nav>
@@ -27,6 +27,12 @@
             <div class="card-dash" onclick="toggleSecao('vtrs')">
                 <h3>Frota Cadastrada</h3>
                 <p id="totalViaturas">0</p>
+                <small>Clique para detalhar</small>
+            </div>
+            
+            <div class="card-dash" onclick="toggleSecao('locais')" style="border-left-color: #17a2b8;">
+                <h3>Pontos Mapeados</h3>
+                <p id="totalLocais">0</p>
                 <small>Clique para detalhar</small>
             </div>
             
@@ -49,6 +55,16 @@
                 <table>
                     <thead><tr><th>Prefixo</th><th>Placa</th><th>Rádio</th></tr></thead>
                     <tbody id="listaVtrsIndex"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="secaoLocais" class="card-container-main hidden">
+            <h2>Locais e Pontos de Interesse</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Apelido</th><th>Endereço</th><th>Coordenadas</th></tr></thead>
+                    <tbody id="listaLocaisIndex"></tbody>
                 </table>
             </div>
         </div>
@@ -76,28 +92,67 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Carrega dados do LocalStorage
             const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
+            const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || []; // Novo
             const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
             const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
 
+            // Atualiza os contadores nos Cards
             document.getElementById('totalViaturas').innerText = viaturas.length;
+            document.getElementById('totalLocais').innerText = locais.length; // Novo
             document.getElementById('totalOS').innerText = ordens.length;
             document.getElementById('totalEscalas').innerText = escalas.length;
 
+            // Renderiza Tabela Viaturas
             const tbVtr = document.getElementById('listaVtrsIndex');
-            viaturas.forEach(v => { tbVtr.innerHTML += `<tr><td>${v.prefixo}</td><td>${v.placa}</td><td>${v.radio}</td></tr>`; });
+            viaturas.forEach(v => { 
+                tbVtr.innerHTML += `<tr><td>${v.prefixo}</td><td>${v.placa}</td><td>${v.radio}</td></tr>`; 
+            });
 
+            // Renderiza Tabela Locais (NOVO)
+            const tbLocais = document.getElementById('listaLocaisIndex');
+            locais.forEach(l => {
+                tbLocais.innerHTML += `
+                    <tr>
+                        <td><strong>${l.apelido}</strong></td>
+                        <td>${l.rua}, ${l.numero || 'S/N'} - ${l.bairro}</td>
+                        <td style="font-family: monospace; color: #1a237e;">${l.lat}, ${l.lng}</td>
+                    </tr>`;
+            });
+
+            // Renderiza Tabela OS
             const tbOS = document.getElementById('listaOSIndex');
-            ordens.forEach(os => { tbOS.innerHTML += `<tr><td>${os.numero}</td><td>${os.nomeOS || 'S/N'}</td><td>${os.inicioGeral} - ${os.terminoGeral}</td></tr>`; });
+            ordens.forEach(os => { 
+                tbOS.innerHTML += `<tr><td>${os.numero}</td><td>${os.nomeOS || 'S/N'}</td><td>${os.inicioGeral} - ${os.terminoGeral}</td></tr>`; 
+            });
 
+            // Renderiza Tabela Escalas
             const tbEscala = document.getElementById('listaEscalasIndex');
-            escalas.forEach(e => { tbEscala.innerHTML += `<tr><td>${e.prefixo}</td><td>${e.rgComandante}</td><td>Ativa</td></tr>`; });
+            escalas.forEach(e => { 
+                tbEscala.innerHTML += `<tr><td>${e.prefixo}</td><td>${e.rgComandante}</td><td>Ativa</td></tr>`; 
+            });
         });
 
         function toggleSecao(tipo) {
+            // Esconde todas e mostra apenas a selecionada
             document.querySelectorAll('.card-container-main').forEach(d => d.classList.add('hidden'));
-            const ids = { 'vtrs': 'secaoVtrs', 'ordens': 'secaoOrdens', 'escalas': 'secaoEscalas' };
-            document.getElementById(ids[tipo]).classList.remove('hidden');
+            
+            const ids = { 
+                'vtrs': 'secaoVtrs', 
+                'locais': 'secaoLocais', // Novo ID
+                'ordens': 'secaoOrdens', 
+                'escalas': 'secaoEscalas' 
+            };
+            
+            if(ids[tipo]) {
+                document.getElementById(ids[tipo]).classList.remove('hidden');
+                
+                // Scroll suave até a seção aberta (melhor experiência no celular)
+                setTimeout(() => {
+                    document.getElementById(ids[tipo]).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
         }
     </script>
 </body>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGF - Cadastro de Locais</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+     
+    <style>
+        #map {
+            height: 450px;
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            z-index: 1;
+        }
+        .input-locked {
+            background-color: #e9ecef;
+            color: #495057;
+            cursor: not-allowed;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">🚓 SGF | Mapeamento</div>
+        <div class="menu">
+            <a href="index.html">Visão Geral</a>
+            <a href="cadastro.html">Frota</a>
+            <a href="enderecos.html" class="active">Locais</a>
+            <a href="os.html">Ordens</a>
+            <a href="escalamento.html">Operações</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="card-container-main">
+            <h2>Cadastrar Novo Ponto de Interesse</h2>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                Arraste o pino no mapa para preencher o endereço automaticamente ou digite e clique em "Buscar no Mapa".
+            </p>
+
+            <div class="row" style="align-items: flex-start;">
+                
+                <div class="col-1">
+                    <form id="formEndereco" style="display: block;">
+                        
+                        <div style="margin-bottom: 15px;">
+                            <label>Apelido do Local (Identificação Tática)</label>
+                            <input type="text" id="apelido" class="input-padrao" placeholder="Ex: Base Operacional 01" required>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label>Logradouro / Rua</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="nomeRua" class="input-padrao" placeholder="Nome da Rua" required>
+                                <button type="button" onclick="buscarEnderecoNoMapa()" class="btn-info" style="padding: 0 15px;" title="Buscar endereço digitado no mapa">🔍</button>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-1">
+                                <label>Número</label>
+                                <input type="text" id="numero" class="input-padrao" placeholder="S/N">
+                            </div>
+                            <div class="col-2">
+                                <label>Bairro</label>
+                                <input type="text" id="bairro" class="input-padrao" placeholder="Bairro">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-2">
+                                <label>Cidade</label>
+                                <input type="text" id="cidade" class="input-padrao" value="Rio de Janeiro">
+                            </div>
+                            <div class="col-1">
+                                <label>UF</label>
+                                <input type="text" id="estado" class="input-padrao input-locked" value="RJ" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-1">
+                                <label style="color: #1a237e;">Latitude</label>
+                                <input type="text" id="latitude" class="input-padrao input-locked" readonly>
+                            </div>
+                            <div class="col-1">
+                                <label style="color: #1a237e;">Longitude</label>
+                                <input type="text" id="longitude" class="input-padrao input-locked" readonly>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Salvar Localização</button>
+                    </form>
+                </div>
+
+                <div class="col-1">
+                    <label>Mapa Tático</label>
+                    <div id="map"></div>
+                    <small id="statusMapa" style="display: block; text-align: center; margin-top: 5px; color: #666; font-style: italic;">
+                        Arraste o pino para capturar o endereço...
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-container-main" style="margin-top: 30px;">
+            <h2>Locais Cadastrados</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Apelido / ID</th>
+                            <th>Endereço Completo</th>
+                            <th>Coordenadas</th>
+                            <th style="text-align: center;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaEnderecos"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    <script src="enderecos.js"></script>
+</body>
+</html>

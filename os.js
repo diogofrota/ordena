@@ -1,5 +1,5 @@
 /**
- * LÓGICA DE GERENCIAMENTO DE OS COM LOCAL STORAGE
+ * LÓGICA DE GERENCIAMENTO DE OS COM LOCAL STORAGE E SUGESTÃO DE LOCAIS
  */
 
 let listaAtividadesTemporaria = [];
@@ -8,7 +8,21 @@ let idEdicaoOS = -1;
 document.addEventListener('DOMContentLoaded', () => {
     carregarOS();
     prepararNovoCadastro();
+    carregarSugestoesLocais(); 
 });
+
+function carregarSugestoesLocais() {
+    const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
+    const datalist = document.getElementById('listaLocaisSugestao');
+    datalist.innerHTML = '';
+
+    locais.forEach(local => {
+        const option = document.createElement('option');
+        const textoSugestao = `[${local.apelido}] - ${local.rua}, ${local.numero || 'S/N'} - ${local.bairro}`;
+        option.value = textoSugestao;
+        datalist.appendChild(option);
+    });
+}
 
 function prepararNovoCadastro() {
     listaAtividadesTemporaria = [];
@@ -17,11 +31,9 @@ function prepararNovoCadastro() {
     document.getElementById('formTitle').innerText = "Nova Ordem de Serviço";
     document.getElementById('btnFinalizar').innerText = "Finalizar e Gravar OS";
     
-    // Esconde área de fracionamento
     document.getElementById('areaFracionamento').style.display = 'none';
-    document.getElementById('btnCriarOS').style.display = 'inline-flex'; // Volta o botão
+    document.getElementById('btnCriarOS').style.display = 'inline-flex';
     
-    // Reseta visual do cabeçalho (remove modo resumo)
     const cabecalho = document.getElementById('cabecalhoOS');
     cabecalho.classList.remove('container-resumo');
     
@@ -38,6 +50,10 @@ function prepararNovoCadastro() {
     document.getElementById('nomeOS').value = '';
     document.getElementById('inicioGeral').value = '';
     document.getElementById('terminoGeral').value = '';
+    
+    // Limpa o campo de prescrições
+    document.getElementById('prescricoesDiversas').value = '';
+    
     renderizarTabelaAtividades();
 }
 
@@ -51,10 +67,14 @@ function liberarFracionamento() {
         return;
     }
 
+    if (ini >= fim) {
+        alert("Erro no Turno Geral: A hora de início deve ser anterior ao término.");
+        return;
+    }
+
     document.getElementById('areaFracionamento').style.display = 'block';
     document.getElementById('btnCriarOS').style.display = 'none';
     
-    // Aplica visual de "Resumo"
     const cabecalho = document.getElementById('cabecalhoOS');
     cabecalho.classList.add('container-resumo');
 
@@ -64,6 +84,8 @@ function liberarFracionamento() {
         el.disabled = true;
         el.classList.add('modo-resumo');
     });
+    
+    carregarSugestoesLocais();
 }
 
 function adicionarFracao() {
@@ -79,7 +101,28 @@ function adicionarFracao() {
         return;
     }
 
+    if (ativ.inicio >= ativ.fim) {
+        alert("Erro: O horário de início da atividade deve ser anterior ao fim.");
+        return;
+    }
+
+    const temConflito = listaAtividadesTemporaria.some(item => {
+        return (ativ.inicio < item.fim && ativ.fim > item.inicio);
+    });
+
+    if (temConflito) {
+        alert("⚠️ Conflito Detectado!\nJá existe uma atividade cadastrada que ocupa esse horário.\nVerifique os horários e tente novamente.");
+        return;
+    }
+
     listaAtividadesTemporaria.push(ativ);
+
+    listaAtividadesTemporaria.sort((a, b) => {
+        if (a.inicio < b.inicio) return -1;
+        if (a.inicio > b.inicio) return 1;
+        return 0;
+    });
+
     renderizarTabelaAtividades();
     
     document.getElementById('inicioFracao').value = '';
@@ -90,6 +133,7 @@ function adicionarFracao() {
 function renderizarTabelaAtividades() {
     const tbody = document.getElementById('tabelaFracoesTemp');
     tbody.innerHTML = '';
+    
     listaAtividadesTemporaria.forEach((item, index) => {
         tbody.innerHTML += `
             <tr>
@@ -122,6 +166,7 @@ function finalizarOS() {
         nomeOS: document.getElementById('nomeOS').value,
         inicioGeral: document.getElementById('inicioGeral').value,
         terminoGeral: document.getElementById('terminoGeral').value,
+        prescricoes: document.getElementById('prescricoesDiversas').value, // SALVANDO PRESCRIÇÕES
         atividades: listaAtividadesTemporaria
     };
 
@@ -170,14 +215,23 @@ function editarOS(index) {
     document.getElementById('nomeOS').value = os.nomeOS;
     document.getElementById('inicioGeral').value = os.inicioGeral;
     document.getElementById('terminoGeral').value = os.terminoGeral;
+    
+    // CARREGANDO PRESCRIÇÕES
+    document.getElementById('prescricoesDiversas').value = os.prescricoes || '';
 
     listaAtividadesTemporaria = [...os.atividades];
+    
+    listaAtividadesTemporaria.sort((a, b) => {
+        if (a.inicio < b.inicio) return -1;
+        if (a.inicio > b.inicio) return 1;
+        return 0;
+    });
+
     renderizarTabelaAtividades();
 
     document.getElementById('formTitle').innerText = "Editando OS: " + os.numero;
     document.getElementById('btnFinalizar').innerText = "Atualizar OS";
     
-    // Força a liberação do fracionamento e aplica o visual
     liberarFracionamento();
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -197,15 +251,18 @@ function gerarPDF(index) {
     const doc = new jsPDF();
     const os = JSON.parse(localStorage.getItem('ordensServico'))[index];
 
+    // Título
     doc.setFontSize(20);
     doc.setTextColor(26, 35, 126);
     doc.text(`ORDEM DE SERVIÇO Nº ${os.numero}`, 14, 20);
     
+    // Dados Principais
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text(`Missão: ${os.nomeOS}`, 14, 32);
     doc.text(`Período do Turno: ${os.inicioGeral} às ${os.terminoGeral}`, 14, 40);
 
+    // Tabela
     const data = os.atividades.map(a => [a.tipo, a.inicio, a.fim, a.local]);
     doc.autoTable({
         startY: 48,
@@ -214,6 +271,22 @@ function gerarPDF(index) {
         headStyles: { fillColor: [26, 35, 126] },
         theme: 'striped'
     });
+
+    // Prescrições Diversas no PDF
+    if(os.prescricoes) {
+        let finalY = doc.lastAutoTable.finalY + 15; // Pega a posição onde a tabela acabou
+        
+        doc.setFontSize(14);
+        doc.setTextColor(26, 35, 126);
+        doc.text("Prescrições Diversas / Observações:", 14, finalY);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        
+        // Quebra o texto automaticamente para não sair da margem
+        const splitText = doc.splitTextToSize(os.prescricoes, 180);
+        doc.text(splitText, 14, finalY + 8);
+    }
 
     doc.save(`SGF_OS_${os.numero}.pdf`);
 }

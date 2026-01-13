@@ -15,6 +15,7 @@
         <div class="menu">
             <a href="index.html">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
+            <a href="enderecos.html">Locais</a>
             <a href="os.html" class="active">Ordens de Serviço</a>
             <a href="escalamento.html">Ativar Monitoramento</a>
         </div>
@@ -78,7 +79,10 @@
                     <div class="row" style="align-items: flex-end;">
                         <div class="col-3">
                             <label>Localização / Ponto Focal</label>
-                            <input type="text" id="localAtividade" placeholder="Logradouro ou Ponto de Referência" class="input-padrao">
+                            
+                            <input type="text" id="localAtividade" list="listaLocaisSugestao" placeholder="Digite ou selecione um local cadastrado..." class="input-padrao" autocomplete="off">
+                            <datalist id="listaLocaisSugestao"></datalist>
+                            
                         </div>
                         <div class="col-1">
                             <button type="button" onclick="adicionarFracao()" class="btn-info" style="width: 100%;">
@@ -97,6 +101,10 @@
                     </table>
                 </div>
 
+                <div style="margin-top: 25px;">
+                    <label style="font-weight: bold; color: #1a237e;">Prescrições Diversas / Observações Gerais</label>
+                    <textarea id="prescricoesDiversas" class="input-padrao" style="height: 100px; padding: 10px; resize: vertical;" placeholder="Digite aqui orientações sobre uniforme, armamento, rádio, conduta, etc..."></textarea>
+                </div>
                 <div style="margin-top: 30px;">
                     <button onclick="finalizarOS()" id="btnFinalizar" class="btn-success" style="width: 100%; height: 55px; font-size: 1.1rem;">
                         Finalizar e Gravar OS
