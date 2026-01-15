@@ -7,7 +7,7 @@
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos para Filtros e Status (Igual ao OS) */
+        /* Estilos existentes */
         .filter-btn {
             padding: 8px 16px;
             border: 1px solid #1a237e;
@@ -36,12 +36,17 @@
     <nav>
         <div class="logo">ORDENA | Sistema de Gestão</div>
         <div class="menu">
-            <a href="index.html">Dashboard</a>
+            <a href="index.html">Inicio</a>
             <a href="cadastro.html" class="active">Viaturas</a>
+            <a href="cabines.html">Cabines</a>
+            <a href="setores.html">Setores</a> 
             <a href="enderecos.html">Locais</a>
             <a href="os.html">Ordens de Serviço</a>
             <a href="escalamento.html">Ativação</a>
-            <a href="historico.html">Histórico</a> </div>
+            <a href="historico.html">Histórico</a>
+            <a href="mapa_tatico.html">Mapa Tático</a>
+            <a href="dashboard.html">Dashboard</a>
+     </div>
     </nav>
 
     <main>
@@ -52,6 +57,17 @@
                 
                 <div class="row">
                     <div class="col-1">
+                        <label>Tipo de Veículo</label>
+                        <select id="tipoVeiculo" class="input-padrao" required>
+                            <option value="">Selecione...</option>
+                            <option value="Carro">Carro</option>
+                            <option value="Moto">Moto</option>
+                            <option value="Bicicleta">Bicicleta</option>
+                            <option value="Triciclo">Triciclo</option>
+                        </select>
+                    </div>
+
+                    <div class="col-1">
                         <label>Prefixo Operacional</label>
                         <input type="text" id="prefixo" class="input-padrao" placeholder="Ex: 80-1234" required>
                     </div>
@@ -61,13 +77,14 @@
                     </div>
                     <div class="col-1">
                         <label>Identificador Rádio</label>
-                        <input type="text" id="radio" class="input-padrao" placeholder="ID Digital" required>
+                        <input type="text" id="radio" class="input-padrao" placeholder="Opcional">
                     </div>
                 </div>
 
                 <div class="row">
-                    <button type="submit" id="btnSalvar" class="btn-primary" style="width: 100%;">Salvar Registro</button>
-                    <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; width: 100%; margin-top: 10px;" onclick="cancelarEdicao()">Cancelar</button>
+                    <button type="submit" id="btnSalvar" class="btn-primary" style="flex: 1;">Salvar Registro</button>
+                    
+                    <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -87,6 +104,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>Tipo</th>
                             <th>Prefixo</th>
                             <th>Placa</th>
                             <th>Rádio</th>
@@ -99,6 +117,7 @@
             </div>
         </div>
     </main>
+
     <script src="script.js"></script>
 </body>
 </html>

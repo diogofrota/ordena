@@ -9,35 +9,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
-        .filter-btn {
-            padding: 8px 16px;
-            border: 1px solid #1a237e;
-            background: white;
-            color: #1a237e;
-            cursor: pointer;
-            border-radius: 20px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .filter-btn.active {
-            background: #1a237e;
-            color: white;
-        }
-        .status-pill {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
+        .filter-btn { padding: 8px 16px; border: 1px solid #1a237e; background: white; color: #1a237e; cursor: pointer; border-radius: 20px; font-weight: 600; transition: all 0.3s; }
+        .filter-btn.active { background: #1a237e; color: white; }
+        .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
         .status-ativa { background: #d4edda; color: #155724; }
         .status-inativa { background: #f8d7da; color: #721c24; }
-        
-        /* Botão Cancelar (Cinza) */
-        .btn-cancelar {
-            background-color: #6c757d !important;
-            color: white;
-            width: 100%;
-        }
+        .btn-cancelar { background-color: #6c757d !important; color: white; width: 100%; }
+        .header-controls .col-1 { flex: 1; }
     </style>
 </head>
 <body>
@@ -46,10 +24,15 @@
         <div class="menu">
             <a href="index.html">Dashboard</a>
             <a href="cadastro.html">Viaturas</a>
+            <a href="cabines.html">Cabines</a>
+            <a href="setores.html">Setores</a> 
             <a href="enderecos.html">Locais</a>
             <a href="os.html" class="active">Ordens de Serviço</a>
             <a href="escalamento.html">Ativação</a>
-            <a href="historico.html">Histórico</a> </div>
+            <a href="historico.html">Histórico</a>
+            <a href="mapa_tatico.html">Mapa Tático</a>
+            <a href="dashboard.html">Dashboard</a>
+        </div>
     </nav>
 
     <main>
@@ -62,23 +45,46 @@
                         <label class="label-resumo">Nº OS (Automático)</label>
                         <input type="text" id="numOS" readonly class="input-padrao" style="background: #e9ecef; font-weight: bold; text-align: center;">
                     </div>
+                    
+                    <div class="col-2">
+                        <label class="label-resumo">Aplicação do Recurso (Tipo)</label>
+                        <select id="tipoRecursoOS" class="input-padrao">
+                            <option value="Viatura">Carro</option>
+                            <option value="Moto">Motocicleta</option>
+                            <option value="Bicicleta">Bicicleta</option>
+                            <option value="Triciclo">Triciclo</option>
+                            <option value="Cabine">Cabine</option>
+                            <option value="Setor">Setor</option>
+                        </select>
+                    </div>
+
                     <div class="col-3">
                         <label class="label-resumo">Missão / Operação</label>
                         <input type="text" id="nomeOS" placeholder="Descrição da missão" class="input-padrao">
                     </div>
                 </div>
 
-                <div class="row" style="align-items: flex-end;">
+                <div class="row header-controls" style="align-items: flex-end;">
+                    <div class="col-1">
+                        <label class="label-resumo">Escala (Duração)</label>
+                        <select id="turnoDuracao" class="input-padrao" onchange="calcularTerminoAutomatico()">
+                            <option value="0">Personalizado</option>
+                            <option value="6">6 Horas</option>
+                            <option value="8">8 Horas</option>
+                            <option value="12" selected>12 Horas</option>
+                            <option value="24">24 Horas</option>
+                        </select>
+                    </div>
                     <div class="col-1">
                         <label class="label-resumo">Início Turno</label>
-                        <input type="time" id="inicioGeral" class="input-padrao">
+                        <input type="time" id="inicioGeral" class="input-padrao" onchange="calcularTerminoAutomatico()">
                     </div>
                     <div class="col-1">
                         <label class="label-resumo">Término Turno</label>
                         <input type="time" id="terminoGeral" class="input-padrao">
                     </div>
-                    <div class="col-2">
-                        <button onclick="liberarFracionamento()" id="btnCriarOS" class="btn-primary" style="width: 100%;">Criar OS e Fracionar</button>
+                    <div class="col-1">
+                        <button onclick="liberarFracionamento()" id="btnCriarOS" class="btn-primary" style="width: 100%;">Criar e Fracionar</button>
                     </div>
                 </div>
             </div>
@@ -92,11 +98,20 @@
                             <label>Tipo de Atividade</label>
                             <select id="tipoAtividade" class="input-padrao">
                                 <option value="Preleção">Preleção</option>
-                                <option value="Patrulhamento">Patrulhamento</option>
-                                <option value="Baseamento">Baseamento</option>
                                 <option value="Intervalo">Intervalo</option>
-                                <option value="Deslocamento">Deslocamento</option>
                                 <option value="Retorno Base">Retorno Base</option>
+                                <optgroup label="Tipos de Policiamento">
+                                    <option value="Baseamento">Baseamento</option>
+                                    <option value="Deslocamento">Deslocamento</option>
+                                    <option value="Patrulhamento">Patrulhamento (Geral)</option>
+                                    <option value="Patrulhamento Raio 100m">Patrulhamento Raio 100m</option>
+                                    <option value="Patrulhamento Raio 200m">Patrulhamento Raio 200m</option>
+                                    <option value="Patrulhamento Raio 500m">Patrulhamento Raio 500m</option>
+                                    <option value="Patrulhamento Raio 1km">Patrulhamento Raio 1km</option>
+                                    <option value="Patrulhamento Raio 2km">Patrulhamento Raio 2km</option>
+                                    <option value="Patrulhamento Raio 5km">Patrulhamento Raio 5km</option>
+                                    <option value="Patrulhamento Raio 10km">Patrulhamento Raio 10km</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="col-1">
@@ -159,10 +174,9 @@
                     <thead>
                         <tr>
                             <th>Nº OS</th>
-                            <th>Data Criação</th>
-                            <th>Missão</th>
-                            <th>Status</th>
-                            <th style="text-align: center;">Ações</th>
+                            <th>Recurso</th> <th>Missão</th>
+                            <th>Duração</th>
+                            <th>Turno</th> <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaOS"></tbody>

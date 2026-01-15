@@ -13,22 +13,74 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarSugestoesLocais(); 
 });
 
+// --- NOVO: CÁLCULO AUTOMÁTICO DE HORAS ---
+function calcularTerminoAutomatico() {
+    const duracao = parseInt(document.getElementById('turnoDuracao').value);
+    const inicio = document.getElementById('inicioGeral').value;
+    const campoTermino = document.getElementById('terminoGeral');
+
+    if (duracao === 0 || !inicio) {
+        campoTermino.readOnly = false;
+        return;
+    }
+
+    const [hora, minuto] = inicio.split(':').map(Number);
+    let novaHora = hora + duracao;
+    if (novaHora >= 24) {
+        novaHora = novaHora - 24;
+    }
+
+    const novaHoraString = novaHora.toString().padStart(2, '0');
+    const minutoString = minuto.toString().padStart(2, '0');
+    
+    campoTermino.value = `${novaHoraString}:${minutoString}`;
+}
+
+// --- FUNÇÃO AUXILIAR: VALIDAÇÃO DE INTERVALO DE TEMPO ---
+function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
+    const turnoInicio = document.getElementById('inicioGeral').value;
+    const turnoFim = document.getElementById('terminoGeral').value;
+
+    const getMinutos = (h) => {
+        const [hh, mm] = h.split(':').map(Number);
+        return hh * 60 + mm;
+    };
+
+    const tIni = getMinutos(turnoInicio);
+    const tFim = getMinutos(turnoFim);
+    const aIni = getMinutos(horaInicioAtiv);
+    const aFim = getMinutos(horaFimAtiv);
+
+    const turnoCruzaMeiaNoite = tFim < tIni;
+
+    const estaDentro = (tempo, inicio, fim, cruza) => {
+        if (cruza) {
+            return tempo >= inicio || tempo <= fim;
+        } else {
+            return tempo >= inicio && tempo <= fim;
+        }
+    };
+
+    if (!estaDentro(aIni, tIni, tFim, turnoCruzaMeiaNoite)) return false;
+    if (!estaDentro(aFim, tIni, tFim, turnoCruzaMeiaNoite)) return false;
+
+    const atividadeCruza = aFim < aIni;
+    if (atividadeCruza && !turnoCruzaMeiaNoite) return false;
+
+    return true;
+}
+
+// --- RESTO DO CÓDIGO ---
+
 function migrarDadosAntigos() {
     let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     let houveMudanca = false;
-
     bancoOS.forEach(os => {
-        if (!os.status) {
-            os.status = 'Ativa'; 
-            os.dataCriacao = new Date().toISOString(); 
-            os.dataEncerramento = null;
-            houveMudanca = true;
-        }
+        if (!os.status) { os.status = 'Ativa'; os.dataCriacao = new Date().toISOString(); os.dataEncerramento = null; houveMudanca = true; }
+        if (!os.duracaoTexto) { os.duracaoTexto = "Indefinido"; houveMudanca = true; } 
+        if (!os.tipoRecurso) { os.tipoRecurso = "Viatura"; houveMudanca = true; } // Padrão antigo
     });
-
-    if (houveMudanca) {
-        localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
-    }
+    if (houveMudanca) localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
 }
 
 function mudarFiltro(status) {
@@ -42,9 +94,7 @@ function carregarSugestoesLocais() {
     const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
     const datalist = document.getElementById('listaLocaisSugestao');
     datalist.innerHTML = '';
-
     const locaisAtivos = locais.filter(l => l.status === 'Ativo');
-
     locaisAtivos.forEach(local => {
         const option = document.createElement('option');
         const textoSugestao = `[${local.apelido}] - ${local.rua}, ${local.numero || 'S/N'} - ${local.bairro}`;
@@ -53,30 +103,23 @@ function carregarSugestoesLocais() {
     });
 }
 
-// --- CONTROLE VISUAL DO FORMULÁRIO ---
-
 function prepararNovoCadastro() {
     listaAtividadesTemporaria = [];
     idEdicaoOS = -1;
-    
     document.getElementById('formTitle').innerText = "Nova Ordem de Serviço";
     document.getElementById('btnFinalizar').innerText = "Finalizar e Gravar OS";
-    
-    // Reseta inputs e estado
     cancelarCriacao();
-
     const proxima = localStorage.getItem('proximoOS') || 1001;
     document.getElementById('numOS').value = proxima;
-    
     document.getElementById('nomeOS').value = '';
     document.getElementById('inicioGeral').value = '';
     document.getElementById('terminoGeral').value = '';
     document.getElementById('prescricoesDiversas').value = '';
-    
+    document.getElementById('turnoDuracao').value = "12";
+    document.getElementById('tipoRecursoOS').value = "Viatura"; 
     renderizarTabelaAtividades();
 }
 
-// Botão "Criar OS e Fracionar" aciona isso:
 function liberarFracionamento() {
     const nome = document.getElementById('nomeOS').value;
     const ini = document.getElementById('inicioGeral').value;
@@ -87,44 +130,26 @@ function liberarFracionamento() {
         return;
     }
 
-    if (ini >= fim) {
-        alert("Erro no Turno Geral: A hora de início deve ser anterior ao término.");
-        return;
-    }
-
-    // 1. TRAVAR INPUTS
-    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral'];
+    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral', 'turnoDuracao', 'tipoRecursoOS'];
     inputs.forEach(id => document.getElementById(id).disabled = true);
 
-    // 2. MOSTRAR ÁREA INFERIOR
     document.getElementById('areaFracionamento').style.display = 'block';
-
-    // 3. TRANSFORMAR BOTÃO EM "CANCELAR"
     const btn = document.getElementById('btnCriarOS');
     btn.innerText = "Cancelar";
-    btn.className = "btn-cancelar"; // Classe cinza definida no CSS
-    btn.setAttribute('onclick', 'cancelarCriacao()'); // Muda a função do clique
-
+    btn.className = "btn-cancelar";
+    btn.setAttribute('onclick', 'cancelarCriacao()');
     carregarSugestoesLocais();
 }
 
-// Botão "Cancelar" aciona isso:
 function cancelarCriacao() {
-    // 1. DESTRAVAR INPUTS
-    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral'];
+    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral', 'turnoDuracao', 'tipoRecursoOS'];
     inputs.forEach(id => document.getElementById(id).disabled = false);
-
-    // 2. ESCONDER ÁREA INFERIOR
     document.getElementById('areaFracionamento').style.display = 'none';
-
-    // 3. RESTAURAR BOTÃO ORIGINAL
     const btn = document.getElementById('btnCriarOS');
-    btn.innerText = "Criar OS e Fracionar";
-    btn.className = "btn-primary"; // Volta a ser azul
-    btn.setAttribute('onclick', 'liberarFracionamento()'); // Volta função original
+    btn.innerText = "Criar e Fracionar";
+    btn.className = "btn-primary";
+    btn.setAttribute('onclick', 'liberarFracionamento()');
 }
-
-// --- LÓGICA DE ATIVIDADES ---
 
 function adicionarFracao() {
     const ativ = {
@@ -134,33 +159,28 @@ function adicionarFracao() {
         local: document.getElementById('localAtividade').value
     };
 
-    if (!ativ.inicio || !ativ.fim || !ativ.local) {
-        alert("Preencha todos os campos da atividade.");
+    if (!ativ.inicio || !ativ.fim) {
+        alert("Preencha os horários.");
         return;
     }
 
-    if (ativ.inicio >= ativ.fim) {
-        alert("Erro: O horário de início da atividade deve ser anterior ao fim.");
+    if (!validarHorarioDentroDoTurno(ativ.inicio, ativ.fim)) {
+        alert(`ERRO: O horário da atividade (${ativ.inicio} - ${ativ.fim}) está FORA dos limites do turno geral!\nVerifique se não há erro na virada do dia.`);
         return;
     }
 
-    const temConflito = listaAtividadesTemporaria.some(item => {
-        return (ativ.inicio < item.fim && ativ.fim > item.inicio);
-    });
+    const tiposIsentosDeLocal = ['Preleção', 'Intervalo', 'Retorno Base'];
+    const precisaDeLocal = !tiposIsentosDeLocal.includes(ativ.tipo);
 
-    if (temConflito) {
-        alert("⚠️ Conflito Detectado!\nJá existe uma atividade cadastrada que ocupa esse horário.");
+    if (precisaDeLocal && !ativ.local) {
+        alert("Localização é obrigatória para esta atividade.");
         return;
     }
+
+    if (!ativ.local) ativ.local = "---";
 
     listaAtividadesTemporaria.push(ativ);
-
-    listaAtividadesTemporaria.sort((a, b) => {
-        if (a.inicio < b.inicio) return -1;
-        if (a.inicio > b.inicio) return 1;
-        return 0;
-    });
-
+    listaAtividadesTemporaria.sort((a, b) => a.inicio.localeCompare(b.inicio));
     renderizarTabelaAtividades();
     
     document.getElementById('inicioFracao').value = '';
@@ -171,7 +191,6 @@ function adicionarFracao() {
 function renderizarTabelaAtividades() {
     const tbody = document.getElementById('tabelaFracoesTemp');
     tbody.innerHTML = '';
-    
     listaAtividadesTemporaria.forEach((item, index) => {
         tbody.innerHTML += `
             <tr>
@@ -193,18 +212,23 @@ function removerFracao(index) {
 
 function finalizarOS() {
     if (listaAtividadesTemporaria.length === 0) {
-        alert("Adicione ao menos uma atividade antes de finalizar.");
+        alert("Adicione ao menos uma atividade.");
         return;
     }
 
     let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     let numeroParaSalvar = document.getElementById('numOS').value;
     const dataAgora = new Date().toISOString();
+    
+    const selDuracao = document.getElementById('turnoDuracao');
+    const textoDuracao = selDuracao.options[selDuracao.selectedIndex].text;
 
     const dadosFormulario = {
+        tipoRecurso: document.getElementById('tipoRecursoOS').value,
         nomeOS: document.getElementById('nomeOS').value,
         inicioGeral: document.getElementById('inicioGeral').value,
         terminoGeral: document.getElementById('terminoGeral').value,
+        duracaoTexto: textoDuracao,
         prescricoes: document.getElementById('prescricoesDiversas').value,
         atividades: listaAtividadesTemporaria,
         status: 'Ativa',
@@ -213,31 +237,20 @@ function finalizarOS() {
     };
 
     if (idEdicaoOS === -1) {
-        const novoObj = {
-            ...dadosFormulario,
-            numero: numeroParaSalvar,
-            osOrigem: null
-        };
+        const novoObj = { ...dadosFormulario, numero: numeroParaSalvar, osOrigem: null };
         bancoOS.push(novoObj);
         localStorage.setItem('proximoOS', parseInt(numeroParaSalvar) + 1);
-        alert("Ordem de Serviço criada com sucesso!");
-
+        alert("Ordem de Serviço criada!");
     } else {
         if (bancoOS[idEdicaoOS]) {
             bancoOS[idEdicaoOS].status = 'Inativa';
             bancoOS[idEdicaoOS].dataEncerramento = dataAgora;
         }
-
         let proximoNum = localStorage.getItem('proximoOS') || 1001;
-        const novaVersaoObj = {
-            ...dadosFormulario,
-            numero: proximoNum,
-            osOrigem: bancoOS[idEdicaoOS].numero
-        };
-
+        const novaVersaoObj = { ...dadosFormulario, numero: proximoNum, osOrigem: bancoOS[idEdicaoOS].numero };
         bancoOS.push(novaVersaoObj);
         localStorage.setItem('proximoOS', parseInt(proximoNum) + 1);
-        alert(`Ordem atualizada!\n\nA OS ${bancoOS[idEdicaoOS].numero} foi encerrada.\nFoi gerada a nova OS ${proximoNum} com as alterações.`);
+        alert(`OS Atualizada! Nova OS gerada: ${proximoNum}`);
     }
 
     localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
@@ -246,22 +259,17 @@ function finalizarOS() {
 }
 
 function encerrarOS(index) {
-    if (!confirm("Deseja realmente encerrar esta Ordem de Serviço? Ela ficará inativa e sairá da lista de ativas.")) {
-        return;
-    }
-
+    if (!confirm("Deseja encerrar esta OS?")) return;
     let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
-    const dataAgora = new Date().toISOString();
-
     if (bancoOS[index]) {
         bancoOS[index].status = 'Inativa';
-        bancoOS[index].dataEncerramento = dataAgora;
+        bancoOS[index].dataEncerramento = new Date().toISOString();
         localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
-        alert(`OS Nº ${bancoOS[index].numero} encerrada com sucesso!`);
         carregarOS();
     }
 }
 
+// --- EXIBIÇÃO NA TABELA (COM CORREÇÃO DE NOME) ---
 function carregarOS() {
     const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const tbody = document.getElementById('corpoTabelaOS');
@@ -272,8 +280,18 @@ function carregarOS() {
         .filter(os => os.status === statusFiltroAtual)
         .sort((a, b) => b.numero - a.numero);
 
+    // Mapeamento de Códigos para Nomes Amigáveis
+    const mapaNomes = {
+        'Viatura': 'Carro',
+        'Moto': 'Motocicleta',
+        'Bicicleta': 'Bicicleta',
+        'Triciclo': 'Triciclo',
+        'Cabine': 'Cabine',
+        'Setor': 'Setor'
+    };
+
     if (osFiltradas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhuma OS ${statusFiltroAtual.toLowerCase()} encontrada.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#666;">Nenhuma OS encontrada.</td></tr>`;
         return;
     }
 
@@ -283,26 +301,32 @@ function carregarOS() {
             const d = new Date(os.dataCriacao);
             dataExibicao = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
         }
-
-        const classeStatus = os.status === 'Ativa' ? 'status-ativa' : 'status-inativa';
         
+        const duracaoShow = os.duracaoTexto || 'Personalizado';
+        
+        // CORREÇÃO: Traduz o código para o nome amigável
+        const codigoTipo = os.tipoRecurso || 'Viatura'; 
+        const tipoShow = mapaNomes[codigoTipo] || codigoTipo; // Se não achar, mostra o original
+        
+        const horarioShow = `${os.inicioGeral} às ${os.terminoGeral}`;
+
         let botoesAcao = '';
         if (os.status === 'Ativa') {
             botoesAcao = `
-                <button class="btn-warning" onclick="editarOS(${os.originalIndex})" style="padding: 5px 10px; margin-right: 5px;" title="Criar nova versão baseada nesta">Atualizar</button>
-                <button class="btn-delete" onclick="encerrarOS(${os.originalIndex})" style="padding: 5px 10px; background-color: #dc3545;" title="Encerrar OS sem criar nova">Encerrar</button>
+                <button class="btn-warning" onclick="editarOS(${os.originalIndex})" style="padding: 5px 10px; margin-right: 5px;">Atualizar</button>
+                <button class="btn-delete" onclick="encerrarOS(${os.originalIndex})" style="padding: 5px 10px; background-color: #dc3545;">Encerrar</button>
             `;
         } else {
             const dataFim = os.dataEncerramento ? new Date(os.dataEncerramento).toLocaleDateString('pt-BR') : '-';
-            botoesAcao = `<small style="color: #d32f2f;">Encerrada em: ${dataFim}</small>`;
+            botoesAcao = `<small style="color: #d32f2f;">Encerrada: ${dataFim}</small>`;
         }
 
         tbody.innerHTML += `
             <tr>
                 <td><b>${os.numero}</b></td>
-                <td>${dataExibicao}</td>
-                <td>${os.nomeOS}</td>
-                <td><span class="status-pill ${classeStatus}">${os.status}</span></td>
+                <td><span style="font-weight:bold; color:#1a237e;">${tipoShow}</span></td> <td>${os.nomeOS}</td>
+                <td>${duracaoShow}</td>
+                <td>${horarioShow}</td> 
                 <td style="text-align: center;">
                     <div style="display:flex; justify-content:center; gap:5px; align-items:center;">
                         <button class="btn-info" onclick="gerarPDF(${os.originalIndex})" style="padding: 5px 10px;">PDF</button>
@@ -316,27 +340,23 @@ function carregarOS() {
 function editarOS(index) {
     const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const os = bancoOS[index];
-    
     idEdicaoOS = index;
 
     document.getElementById('numOS').value = os.numero;
     document.getElementById('nomeOS').value = os.nomeOS;
+    document.getElementById('tipoRecursoOS').value = os.tipoRecurso || 'Viatura';
     document.getElementById('inicioGeral').value = os.inicioGeral;
     document.getElementById('terminoGeral').value = os.terminoGeral;
     document.getElementById('prescricoesDiversas').value = os.prescricoes || '';
+    document.getElementById('turnoDuracao').value = "0"; 
 
     listaAtividadesTemporaria = [...os.atividades];
     renderizarTabelaAtividades();
 
-    document.getElementById('formTitle').innerText = `Atualizando OS: ${os.numero} (Gerará Novo Número)`;
-    document.getElementById('btnFinalizar').innerText = "Gerar Nova Versão da OS";
-    
-    // Entra em modo "Criado" para permitir edição das frações
+    document.getElementById('formTitle').innerText = `Atualizando OS: ${os.numero}`;
+    document.getElementById('btnFinalizar').innerText = "Gerar Nova Versão";
     liberarFracionamento();
-    
-    // O botão principal de criar precisa sumir na edição, pois usamos o botão "Finalizar" lá embaixo
     document.getElementById('btnCriarOS').style.display = 'none';
-    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -344,6 +364,18 @@ function gerarPDF(index) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const os = JSON.parse(localStorage.getItem('ordensServico'))[index];
+
+    // Mapeamento também para o PDF
+    const mapaNomes = {
+        'Viatura': 'Carro',
+        'Moto': 'Motocicleta',
+        'Bicicleta': 'Bicicleta',
+        'Triciclo': 'Triciclo',
+        'Cabine': 'Cabine',
+        'Setor': 'Setor'
+    };
+    const codigoTipo = os.tipoRecurso || 'Viatura';
+    const tipoNomePDF = mapaNomes[codigoTipo] || codigoTipo;
 
     doc.setFontSize(20);
     doc.setTextColor(26, 35, 126);
@@ -363,25 +395,27 @@ function gerarPDF(index) {
     doc.setFontSize(10);
     
     let dataCriacao = '-';
-    if(os.dataCriacao) {
-        dataCriacao = new Date(os.dataCriacao).toLocaleDateString('pt-BR') + " " + new Date(os.dataCriacao).toLocaleTimeString('pt-BR');
-    }
+    if(os.dataCriacao) dataCriacao = new Date(os.dataCriacao).toLocaleDateString('pt-BR') + " " + new Date(os.dataCriacao).toLocaleTimeString('pt-BR');
     doc.text(`Criada em: ${dataCriacao}`, 14, 28);
-    
-    if (os.osOrigem) {
-        doc.text(`Atualização da OS Nº: ${os.osOrigem}`, 14, 33);
-    }
+    doc.text(`Criada por: Subsecretário de Segurança / Coordenador do Projeto`, 14, 33);
+
+    if (os.osOrigem) doc.text(`Atualização da OS Nº: ${os.osOrigem}`, 14, 38);
 
     doc.setDrawColor(200);
-    doc.line(14, 36, 196, 36);
+    doc.line(14, 42, 196, 42);
     
     doc.setFontSize(12);
-    doc.text(`Missão: ${os.nomeOS}`, 14, 45);
-    doc.text(`Período do Turno: ${os.inicioGeral} às ${os.terminoGeral}`, 14, 52);
+    doc.text(`Missão: ${os.nomeOS}`, 14, 50);
+    
+    // CORREÇÃO: Mostra o nome amigável no PDF
+    doc.text(`Aplicação: ${tipoNomePDF}`, 14, 56);
+    
+    const txtDuracao = os.duracaoTexto ? ` (${os.duracaoTexto})` : '';
+    doc.text(`Período do Turno: ${os.inicioGeral} às ${os.terminoGeral}${txtDuracao}`, 14, 62);
 
     const data = os.atividades.map(a => [a.tipo, a.inicio, a.fim, a.local]);
     doc.autoTable({
-        startY: 60,
+        startY: 70,
         head: [['Atividade', 'Início', 'Fim', 'Localização']],
         body: data,
         headStyles: { fillColor: [26, 35, 126] },
@@ -391,11 +425,9 @@ function gerarPDF(index) {
     if(os.prescricoes) {
         let finalY = doc.lastAutoTable.finalY + 15;
         if (finalY > 250) { doc.addPage(); finalY = 20; }
-
         doc.setFontSize(14);
         doc.setTextColor(26, 35, 126);
         doc.text("Prescrições Diversas / Observações:", 14, finalY);
-        
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         const splitText = doc.splitTextToSize(os.prescricoes, 180);

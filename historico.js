@@ -184,3 +184,42 @@ function reimprimirPDF(index) {
 
     doc.save(`Historico_OS${escala.osNumero}_${escala.prefixo}.pdf`);
 }
+
+// ... código anterior igual ...
+
+    historico.forEach((item, index) => {
+        const dataIni = new Date(item.dataInicio);
+        const dataFim = new Date(item.dataFim);
+        
+        // ... cálculos de data iguais ...
+
+        // Fallback para dados antigos
+        const recursoShow = item.recursoId || item.prefixo;
+        const tipoShow = item.tipoRecurso || 'Viatura';
+        const quemBaixou = item.responsavelBaixa || 'Manual';
+
+        tbody.innerHTML += `
+            <tr>
+                <td>
+                    <strong>${dataIni.toLocaleDateString('pt-BR')}</strong><br>
+                    <small>${dataIni.toLocaleTimeString()} - ${dataFim.toLocaleTimeString()}</small>
+                </td>
+                <td>
+                    <span style="color:#1a237e; font-weight:bold;">OS ${item.osNumero}</span><br>
+                    ${tipoShow}: ${recursoShow}
+                </td>
+                <td>
+                    ${item.equipe[0].posto} ${item.equipe[0].nome}<br>
+                    <small style="color:#666">Baixa por: ${quemBaixou}</small>
+                </td>
+                <td>
+                    <span class="status-badge" style="background:#6c757d;">Encerrado</span>
+                </td>
+                <td style="text-align: center;">
+                    <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 5px 10px; font-size: 0.8rem;">📄 Relatório</button>
+                </td>
+            </tr>
+        `;
+    });
+
+// ... resto do código igual ...
