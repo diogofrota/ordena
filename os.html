@@ -16,6 +16,13 @@
         .status-inativa { background: #f8d7da; color: #721c24; }
         .btn-cancelar { background-color: #6c757d !important; color: white; width: 100%; }
         .header-controls .col-1 { flex: 1; }
+        
+        /* Classe para inputs travados (visual cinza) */
+        .input-travado {
+            background-color: #e9ecef !important;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -96,24 +103,30 @@
                     <div class="row">
                         <div class="col-2">
                             <label>Tipo de Atividade</label>
-                            <select id="tipoAtividade" class="input-padrao">
+                            <select id="tipoAtividade" class="input-padrao" onchange="verificarTravamentoCampos()">
                                 <option value="Preleção">Preleção</option>
                                 <option value="Intervalo">Intervalo</option>
+                                <option value="Deslocamento">Deslocamento</option>
                                 <option value="Retorno Base">Retorno Base</option>
+
                                 <optgroup label="Tipos de Policiamento">
-                                    <option value="Baseamento">Baseamento</option>
-                                    <option value="Deslocamento">Deslocamento</option>
-                                    <option value="Patrulhamento">Patrulhamento (Geral)</option>
-                                    <option value="Patrulhamento Raio 100m">Patrulhamento Raio 100m</option>
-                                    <option value="Patrulhamento Raio 200m">Patrulhamento Raio 200m</option>
-                                    <option value="Patrulhamento Raio 500m">Patrulhamento Raio 500m</option>
-                                    <option value="Patrulhamento Raio 1km">Patrulhamento Raio 1km</option>
-                                    <option value="Patrulhamento Raio 2km">Patrulhamento Raio 2km</option>
-                                    <option value="Patrulhamento Raio 5km">Patrulhamento Raio 5km</option>
-                                    <option value="Patrulhamento Raio 10km">Patrulhamento Raio 10km</option>
+                                    <option value="Baseamento">Baseamento (Ponto Fixo)</option>
+                                    <option value="Patrulhamento">Patrulhamento (Ronda)</option>
                                 </optgroup>
                             </select>
                         </div>
+
+                        <div class="col-1">
+                            <label>Raio / Abrangência</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="number" id="valorRaio" class="input-padrao" placeholder="0" min="0">
+                                <select id="unidadeRaio" class="input-padrao" style="width: 80px;">
+                                    <option value="m">m</option>
+                                    <option value="km">km</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="col-1">
                             <label>De</label>
                             <input type="time" id="inicioFracao" class="input-padrao">

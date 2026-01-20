@@ -10,65 +10,80 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
     <style>
-        /* Layout Específico do Mapa Tático */
-        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        /* Layout de Tela Cheia */
+        body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #f4f6f9; }
         
-        /* BARRA DE KPIS (DASHBOARD) */
+        /* BARRA ÚNICA DE KPIS (HUD STYLE) */
         .kpi-bar {
             background: white;
-            padding: 15px 30px; /* Mais espaçamento lateral */
+            padding: 10px 15px;
             display: flex;
-            justify-content: center; /* CENTRALIZA OS CARDS */
-            align-items: stretch;
-            gap: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            align-items: center;
+            justify-content: center;
+            gap: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             z-index: 10;
-            flex-wrap: wrap; /* Permite quebrar linha em telas muito pequenas */
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap; 
         }
 
-        .kpi-card {
-            background: #fff;
-            border-left: 5px solid var(--primary-color);
-            border-radius: 8px;
-            padding: 15px 10px;
-            
-            /* Lógica de Tamanho e Alinhamento */
-            flex: 1;             /* Cresce para ocupar espaço igual */
-            min-width: 150px;    /* Tamanho mínimo */
-            max-width: 250px;    /* Tamanho máximo para não ficar gigante */
-            
+        .kpi-mini-card {
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
-            align-items: center; /* Centraliza conteúdo interno */
-            text-align: center;
             
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05); /* Sombra suave */
-            transition: transform 0.2s;
+            /* LARGURA FIXA PARA TODOS OS CARDS */
+            width: 110px; 
+            height: 50px; /* Altura fixa também para alinhar */
+            
+            padding: 4px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            transition: all 0.2s;
         }
 
-        .kpi-card:hover { transform: translateY(-3px); }
+        .kpi-mini-card:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
-        .kpi-card span { 
-            font-size: 0.75rem; 
-            color: #777; 
-            text-transform: uppercase; 
+        /* Títulos e Números */
+        .kpi-mini-card span { 
+            font-size: 0.55rem; /* Fonte ajustada para caber nomes longos */
             font-weight: 700; 
+            text-transform: uppercase; 
             letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
+            color: #888;
+            text-align: center;
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
         }
         
-        .kpi-card strong { 
-            font-size: 2rem; 
-            color: #333; 
+        .kpi-mini-card strong { 
+            font-size: 1.4rem; 
             line-height: 1;
+            font-weight: 800;
         }
 
-        /* Cores das Bordas */
-        .bord-blue { border-left-color: #1a237e; }
-        .bord-green { border-left-color: #28a745; }
-        .bord-orange { border-left-color: #fd7e14; }
-        .bord-red { border-left-color: #dc3545; }
+        /* SISTEMA DE 3 CORES */
+        .theme-blue { border-top: 3px solid #1a237e; }
+        .theme-blue strong { color: #1a237e; }
+
+        .theme-green { border-top: 3px solid #28a745; }
+        .theme-green strong { color: #28a745; }
+
+        .theme-orange { border-top: 3px solid #fd7e14; }
+        .theme-orange strong { color: #fd7e14; }
+
+        /* Separador Vertical */
+        .separator {
+            width: 1px;
+            height: 35px;
+            background-color: #ddd;
+            margin: 0 5px;
+        }
 
         /* MAPA */
         #mapaOperacional {
@@ -78,30 +93,21 @@
             z-index: 1;
         }
 
-        /* Ícones Personalizados no Mapa */
+        /* CUSTOM ICON STYLES */
         .custom-div-icon { background: transparent; border: none; }
         .marker-pin {
-            width: 40px; height: 40px;
-            border-radius: 50% 50% 50% 0;
-            background: #1a237e;
-            position: absolute;
-            transform: rotate(-45deg);
-            left: 50%; top: 50%;
-            margin: -20px 0 0 -20px;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50% 50% 50% 0; background: #1a237e;
+            position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -20px 0 0 -20px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
             border: 2px solid white;
         }
         .marker-pin::after {
-            content: ''; width: 24px; height: 24px;
-            margin: 8px 0 0 8px; background: #fff;
+            content: ''; width: 20px; height: 20px; margin: 8px 0 0 8px; background: #fff;
             position: absolute; border-radius: 50%;
         }
         .marker-icon {
-            position: absolute; width: 100%;
-            font-size: 22px; text-align: center;
-            top: -2px; transform: rotate(45deg);
-            z-index: 10;
+            position: absolute; width: 100%; font-size: 18px; text-align: center;
+            top: 0px; transform: rotate(45deg); z-index: 10;
         }
 
         /* Cores dos Pinos */
@@ -110,17 +116,16 @@
         .pin-setor { background: #28a745; }
         .pin-cabine { background: #6f42c1; }
 
-        /* Popup */
-        .leaflet-popup-content-wrapper { border-radius: 8px; font-family: 'Segoe UI', sans-serif; }
-        .popup-header { background: #f8f9fa; padding: 5px 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #1a237e; }
-        .popup-body { padding: 10px; font-size: 0.9rem; }
+        .leaflet-popup-content-wrapper { border-radius: 6px; font-size: 0.9rem; }
+        .popup-header { background: #f1f3f5; padding: 6px 10px; border-bottom: 1px solid #ddd; font-weight: bold; color: #333; }
+        .popup-body { padding: 10px; }
     </style>
 </head>
 <body>
     <nav>
         <div class="logo">ORDENA | COP (Centro de Operações)</div>
         <div class="menu">
-              <a href="index.html">Inicio</a>
+            <a href="index.html">Inicio</a>
             <a href="cadastro.html">Viaturas</a>
             <a href="cabines.html">Cabines</a>
             <a href="setores.html" >Setores</a> 
@@ -134,25 +139,41 @@
     </nav>
 
     <div class="kpi-bar">
-        <div class="kpi-card bord-blue">
-            <span>Efetivo Total</span>
-            <strong id="kpiEfetivo">0</strong>
+        <div class="kpi-mini-card theme-blue">
+            <span>Efetivo Total</span><strong id="kpiEfetivo">0</strong>
         </div>
-        <div class="kpi-card bord-blue">
-            <span>Viaturas - Carros</span>
-            <strong id="kpiCarros">0</strong>
+        <div class="kpi-mini-card theme-blue">
+            <span>Viaturas</span><strong id="kpiCarros">0</strong>
         </div>
-        <div class="kpi-card bord-orange">
-            <span>Motocicletas</span>
-            <strong id="kpiMotos">0</strong>
+        <div class="kpi-mini-card theme-blue">
+            <span>Motos</span><strong id="kpiMotos">0</strong>
         </div>
-        <div class="kpi-card bord-green">
-            <span>Policiamento a Pé</span>
-            <strong id="kpiSetores">0</strong>
+        <div class="kpi-mini-card theme-blue">
+            <span>A Pé</span><strong id="kpiSetores">0</strong>
         </div>
-        <div class="kpi-card bord-red">
-            <span>Cabines / Fixos</span>
-            <strong id="kpiCabines">0</strong>
+
+        <div class="separator"></div>
+
+        <div class="kpi-mini-card theme-green">
+            <span>Patrulhamento</span><strong id="kpiPatrulha">0</strong>
+        </div>
+        <div class="kpi-mini-card theme-green">
+            <span>Baseamento</span><strong id="kpiBase">0</strong>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="kpi-mini-card theme-orange">
+            <span>Deslocamento</span><strong id="kpiDesloc">0</strong>
+        </div>
+        <div class="kpi-mini-card theme-orange">
+            <span>Retorno Base</span><strong id="kpiRetorno">0</strong>
+        </div>
+        <div class="kpi-mini-card theme-orange">
+            <span>Intervalo</span><strong id="kpiIntervalo">0</strong>
+        </div>
+        <div class="kpi-mini-card theme-orange">
+            <span>Preleção</span><strong id="kpiPrelecao">0</strong>
         </div>
     </div>
 

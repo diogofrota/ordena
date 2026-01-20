@@ -10,10 +10,39 @@ document.addEventListener('DOMContentLoaded', () => {
     migrarDadosAntigos(); 
     carregarOS();
     prepararNovoCadastro();
-    carregarSugestoesLocais(); 
+    carregarSugestoesLocais();
+    verificarTravamentoCampos(); // <--- Inicializa o estado dos campos
 });
 
-// --- NOVO: CÁLCULO AUTOMÁTICO DE HORAS ---
+// --- NOVO: LÓGICA DE TRAVAMENTO DE CAMPOS ---
+function verificarTravamentoCampos() {
+    const tipo = document.getElementById('tipoAtividade').value;
+    
+    // Lista de tipos que NÃO precisam de Local nem Raio
+    const isentos = ['Preleção', 'Intervalo', 'Retorno Base', 'Deslocamento'];
+    const deveTravar = isentos.includes(tipo);
+
+    const camposParaTravar = ['localAtividade', 'valorRaio', 'unidadeRaio'];
+
+    camposParaTravar.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.disabled = deveTravar;
+            
+            // Lógica visual (Cinza se travado, Branco se livre)
+            if (deveTravar) {
+                elemento.style.backgroundColor = "#e9ecef";
+                elemento.style.color = "#6c757d";
+                elemento.value = ""; // Limpa o valor para não salvar lixo
+            } else {
+                elemento.style.backgroundColor = "#ffffff";
+                elemento.style.color = "#333";
+            }
+        }
+    });
+}
+
+// --- CÁLCULO AUTOMÁTICO DE HORAS ---
 function calcularTerminoAutomatico() {
     const duracao = parseInt(document.getElementById('turnoDuracao').value);
     const inicio = document.getElementById('inicioGeral').value;
@@ -36,7 +65,7 @@ function calcularTerminoAutomatico() {
     campoTermino.value = `${novaHoraString}:${minutoString}`;
 }
 
-// --- FUNÇÃO AUXILIAR: VALIDAÇÃO DE INTERVALO DE TEMPO ---
+// --- VALIDAÇÃO DE INTERVALO ---
 function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
     const turnoInicio = document.getElementById('inicioGeral').value;
     const turnoFim = document.getElementById('terminoGeral').value;
@@ -70,7 +99,7 @@ function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
     return true;
 }
 
-// --- RESTO DO CÓDIGO ---
+// --- FUNÇÕES CRUD E ESTRUTURAIS ---
 
 function migrarDadosAntigos() {
     let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
@@ -78,7 +107,7 @@ function migrarDadosAntigos() {
     bancoOS.forEach(os => {
         if (!os.status) { os.status = 'Ativa'; os.dataCriacao = new Date().toISOString(); os.dataEncerramento = null; houveMudanca = true; }
         if (!os.duracaoTexto) { os.duracaoTexto = "Indefinido"; houveMudanca = true; } 
-        if (!os.tipoRecurso) { os.tipoRecurso = "Viatura"; houveMudanca = true; } // Padrão antigo
+        if (!os.tipoRecurso) { os.tipoRecurso = "Viatura"; houveMudanca = true; } 
     });
     if (houveMudanca) localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
 }
@@ -117,6 +146,12 @@ function prepararNovoCadastro() {
     document.getElementById('prescricoesDiversas').value = '';
     document.getElementById('turnoDuracao').value = "12";
     document.getElementById('tipoRecursoOS').value = "Viatura"; 
+    
+    // Zera e atualiza os campos de Raio/Local
+    document.getElementById('valorRaio').value = '';
+    document.getElementById('tipoAtividade').value = "Preleção"; // Reset para o padrão
+    verificarTravamentoCampos(); // Atualiza o estado visual
+
     renderizarTabelaAtividades();
 }
 
@@ -139,6 +174,7 @@ function liberarFracionamento() {
     btn.className = "btn-cancelar";
     btn.setAttribute('onclick', 'cancelarCriacao()');
     carregarSugestoesLocais();
+    verificarTravamentoCampos(); // Garante estado correto ao abrir
 }
 
 function cancelarCriacao() {
@@ -152,40 +188,62 @@ function cancelarCriacao() {
 }
 
 function adicionarFracao() {
-    const ativ = {
-        tipo: document.getElementById('tipoAtividade').value,
-        inicio: document.getElementById('inicioFracao').value,
-        fim: document.getElementById('terminoFracao').value,
-        local: document.getElementById('localAtividade').value
-    };
+    const tipo = document.getElementById('tipoAtividade').value;
+    const inicio = document.getElementById('inicioFracao').value;
+    const fim = document.getElementById('terminoFracao').value;
+    const local = document.getElementById('localAtividade').value;
+    
+    const raioValor = document.getElementById('valorRaio').value;
+    const raioUnidade = document.getElementById('unidadeRaio').value;
 
-    if (!ativ.inicio || !ativ.fim) {
+    if (!inicio || !fim) {
         alert("Preencha os horários.");
         return;
     }
 
-    if (!validarHorarioDentroDoTurno(ativ.inicio, ativ.fim)) {
-        alert(`ERRO: O horário da atividade (${ativ.inicio} - ${ativ.fim}) está FORA dos limites do turno geral!\nVerifique se não há erro na virada do dia.`);
+    if (!validarHorarioDentroDoTurno(inicio, fim)) {
+        alert(`ERRO: O horário da atividade (${inicio} - ${fim}) está FORA dos limites do turno geral!\nVerifique se não há erro na virada do dia.`);
         return;
     }
 
-    const tiposIsentosDeLocal = ['Preleção', 'Intervalo', 'Retorno Base'];
-    const precisaDeLocal = !tiposIsentosDeLocal.includes(ativ.tipo);
+    // --- VALIDAÇÃO DE OBRIGATORIEDADE DE LOCAL ---
+    const isentos = ['Preleção', 'Intervalo', 'Retorno Base', 'Deslocamento'];
+    const precisaDeLocal = !isentos.includes(tipo);
 
-    if (precisaDeLocal && !ativ.local) {
-        alert("Localização é obrigatória para esta atividade.");
+    // Se precisa de local e está vazio, bloqueia
+    if (precisaDeLocal && !local) {
+        alert("Localização é obrigatória para esta atividade (Baseamento ou Patrulhamento).");
         return;
     }
 
-    if (!ativ.local) ativ.local = "---";
+    let nomeAtividadeCompleto = tipo;
+    if (raioValor && raioValor > 0) {
+        nomeAtividadeCompleto += ` (Raio: ${raioValor}${raioUnidade})`;
+    }
+
+    const ativ = {
+        tipo: nomeAtividadeCompleto,
+        tipoOriginal: tipo,
+        inicio: inicio,
+        fim: fim,
+        local: local || "---"
+    };
 
     listaAtividadesTemporaria.push(ativ);
     listaAtividadesTemporaria.sort((a, b) => a.inicio.localeCompare(b.inicio));
     renderizarTabelaAtividades();
     
+    // Limpa campos
     document.getElementById('inicioFracao').value = '';
     document.getElementById('terminoFracao').value = '';
+    
+    // Limpa e reseta visual
     document.getElementById('localAtividade').value = '';
+    document.getElementById('valorRaio').value = ''; 
+    // Mantém o tipo selecionado ou volta para padrão? 
+    // Geralmente mantemos para facilitar inserts sequenciais, 
+    // mas chamamos a verificação para garantir
+    verificarTravamentoCampos(); 
 }
 
 function renderizarTabelaAtividades() {
@@ -269,7 +327,7 @@ function encerrarOS(index) {
     }
 }
 
-// --- EXIBIÇÃO NA TABELA (COM CORREÇÃO DE NOME) ---
+// --- EXIBIÇÃO NA TABELA ---
 function carregarOS() {
     const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const tbody = document.getElementById('corpoTabelaOS');
@@ -280,7 +338,6 @@ function carregarOS() {
         .filter(os => os.status === statusFiltroAtual)
         .sort((a, b) => b.numero - a.numero);
 
-    // Mapeamento de Códigos para Nomes Amigáveis
     const mapaNomes = {
         'Viatura': 'Carro',
         'Moto': 'Motocicleta',
@@ -303,11 +360,8 @@ function carregarOS() {
         }
         
         const duracaoShow = os.duracaoTexto || 'Personalizado';
-        
-        // CORREÇÃO: Traduz o código para o nome amigável
         const codigoTipo = os.tipoRecurso || 'Viatura'; 
-        const tipoShow = mapaNomes[codigoTipo] || codigoTipo; // Se não achar, mostra o original
-        
+        const tipoShow = mapaNomes[codigoTipo] || codigoTipo; 
         const horarioShow = `${os.inicioGeral} às ${os.terminoGeral}`;
 
         let botoesAcao = '';
@@ -365,7 +419,6 @@ function gerarPDF(index) {
     const doc = new jsPDF();
     const os = JSON.parse(localStorage.getItem('ordensServico'))[index];
 
-    // Mapeamento também para o PDF
     const mapaNomes = {
         'Viatura': 'Carro',
         'Moto': 'Motocicleta',
@@ -406,8 +459,6 @@ function gerarPDF(index) {
     
     doc.setFontSize(12);
     doc.text(`Missão: ${os.nomeOS}`, 14, 50);
-    
-    // CORREÇÃO: Mostra o nome amigável no PDF
     doc.text(`Aplicação: ${tipoNomePDF}`, 14, 56);
     
     const txtDuracao = os.duracaoTexto ? ` (${os.duracaoTexto})` : '';
