@@ -111,8 +111,6 @@ function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
     if (!estaDentro(aIni, tIni, tFim, turnoCruzaMeiaNoite)) return false;
     if (!estaDentro(aFim, tIni, tFim, turnoCruzaMeiaNoite)) return false;
 
-    // Verifica se a própria atividade não inverteu logicamente fora do contexto da virada
-    // (ex: atividade começar 15:00 e terminar 14:00 no mesmo dia)
     const atividadeCruza = aFim < aIni;
     if (atividadeCruza && !turnoCruzaMeiaNoite) return false;
 
@@ -141,6 +139,14 @@ function mudarFiltro(status) {
 
 function carregarSugestoesLocais() {
     const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
+    
+    // --- MUDANÇA 1: ORDENAÇÃO ALFABÉTICA DO DROPDOWN ---
+    locais.sort((a, b) => {
+        if (!a.apelido) return 1;
+        if (!b.apelido) return -1;
+        return a.apelido.localeCompare(b.apelido, 'pt-BR', { sensitivity: 'base' });
+    });
+
     const datalist = document.getElementById('listaLocaisSugestao');
     datalist.innerHTML = '';
     const locaisAtivos = locais.filter(l => l.status === 'Ativo');
@@ -214,7 +220,7 @@ function adicionarFracao() {
     
     const raioValor = document.getElementById('valorRaio').value;
     const raioUnidade = document.getElementById('unidadeRaio').value;
-    const inicioGeralOS = document.getElementById('inicioGeral').value; // Necessário para ordenação
+    const inicioGeralOS = document.getElementById('inicioGeral').value; 
 
     if (!inicio || !fim) {
         alert("Preencha os horários.");
@@ -249,8 +255,6 @@ function adicionarFracao() {
 
     listaAtividadesTemporaria.push(ativ);
     
-    // --- ORDENAÇÃO INTELIGENTE (CORRIGIDO) ---
-    // Ordena considerando a virada do dia baseado no inicioGeral da OS
     listaAtividadesTemporaria.sort((a, b) => {
         const minA = calcularMinutosParaOrdenacao(a.inicio, inicioGeralOS);
         const minB = calcularMinutosParaOrdenacao(b.inicio, inicioGeralOS);
@@ -259,7 +263,6 @@ function adicionarFracao() {
 
     renderizarTabelaAtividades();
     
-    // Limpa campos
     document.getElementById('inicioFracao').value = '';
     document.getElementById('terminoFracao').value = '';
     document.getElementById('localAtividade').value = '';
@@ -493,7 +496,18 @@ function gerarPDF(index) {
     const txtDuracao = os.duracaoTexto ? ` (${os.duracaoTexto})` : '';
     doc.text(`Período do Turno: ${os.inicioGeral} às ${os.terminoGeral}${txtDuracao}`, 14, 62);
 
-    const data = os.atividades.map(a => [a.tipo, a.inicio, a.fim, a.local]);
+    // --- MUDANÇA 2: ORDENAÇÃO DO PDF COM LÓGICA DE VIRADA DE NOITE ---
+    // Clonamos a lista para não mexer no objeto original e ordenamos antes de gerar o PDF
+    let atividadesOrdenadas = [...os.atividades];
+    atividadesOrdenadas.sort((a, b) => {
+        const minA = calcularMinutosParaOrdenacao(a.inicio, os.inicioGeral);
+        const minB = calcularMinutosParaOrdenacao(b.inicio, os.inicioGeral);
+        return minA - minB;
+    });
+
+    const data = atividadesOrdenadas.map(a => [a.tipo, a.inicio, a.fim, a.local]);
+    // ----------------------------------------------------------------------
+
     doc.autoTable({
         startY: 70,
         head: [['Atividade', 'Início', 'Fim', 'Localização']],
