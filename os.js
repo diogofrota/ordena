@@ -11,14 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarOS();
     prepararNovoCadastro();
     carregarSugestoesLocais();
-    verificarTravamentoCampos(); // <--- Inicializa o estado dos campos
+    verificarTravamentoCampos(); 
 });
 
 // --- NOVO: LÓGICA DE TRAVAMENTO DE CAMPOS ---
 function verificarTravamentoCampos() {
     const tipo = document.getElementById('tipoAtividade').value;
-    
-    // Lista de tipos que NÃO precisam de Local nem Raio
     const isentos = ['Preleção', 'Intervalo', 'Retorno Base', 'Deslocamento'];
     const deveTravar = isentos.includes(tipo);
 
@@ -28,12 +26,10 @@ function verificarTravamentoCampos() {
         const elemento = document.getElementById(id);
         if (elemento) {
             elemento.disabled = deveTravar;
-            
-            // Lógica visual (Cinza se travado, Branco se livre)
             if (deveTravar) {
                 elemento.style.backgroundColor = "#e9ecef";
                 elemento.style.color = "#6c757d";
-                elemento.value = ""; // Limpa o valor para não salvar lixo
+                elemento.value = ""; 
             } else {
                 elemento.style.backgroundColor = "#ffffff";
                 elemento.style.color = "#333";
@@ -65,7 +61,27 @@ function calcularTerminoAutomatico() {
     campoTermino.value = `${novaHoraString}:${minutoString}`;
 }
 
-// --- VALIDAÇÃO DE INTERVALO ---
+// --- VALIDAÇÃO E LÓGICA DE TEMPO ---
+
+// Função auxiliar para ordenar corretamente turnos que viram a noite (ex: 22:00 as 06:00)
+function calcularMinutosParaOrdenacao(horaAtividade, inicioTurno) {
+    if (!horaAtividade || !inicioTurno) return 0;
+
+    const [hAtiv, mAtiv] = horaAtividade.split(':').map(Number);
+    const [hTurno, mTurno] = inicioTurno.split(':').map(Number);
+
+    let minutosAtiv = hAtiv * 60 + mAtiv;
+    let minutosTurno = hTurno * 60 + mTurno;
+
+    // A MÁGICA: Se a hora da atividade for menor que o início do turno (Ex: Ativ 01:00 < Turno 22:00),
+    // o sistema entende que isso é no dia seguinte (+24h ou +1440 min)
+    if (minutosAtiv < minutosTurno) {
+        minutosAtiv += 1440; 
+    }
+
+    return minutosAtiv;
+}
+
 function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
     const turnoInicio = document.getElementById('inicioGeral').value;
     const turnoFim = document.getElementById('terminoGeral').value;
@@ -84,8 +100,10 @@ function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
 
     const estaDentro = (tempo, inicio, fim, cruza) => {
         if (cruza) {
+            // Se cruza meia noite (ex: 22h as 06h), o horário é valido se for >= 22h OU <= 06h
             return tempo >= inicio || tempo <= fim;
         } else {
+            // Turno normal (ex: 08h as 18h), horário deve estar entre inicio E fim
             return tempo >= inicio && tempo <= fim;
         }
     };
@@ -93,6 +111,8 @@ function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
     if (!estaDentro(aIni, tIni, tFim, turnoCruzaMeiaNoite)) return false;
     if (!estaDentro(aFim, tIni, tFim, turnoCruzaMeiaNoite)) return false;
 
+    // Verifica se a própria atividade não inverteu logicamente fora do contexto da virada
+    // (ex: atividade começar 15:00 e terminar 14:00 no mesmo dia)
     const atividadeCruza = aFim < aIni;
     if (atividadeCruza && !turnoCruzaMeiaNoite) return false;
 
@@ -147,10 +167,9 @@ function prepararNovoCadastro() {
     document.getElementById('turnoDuracao').value = "12";
     document.getElementById('tipoRecursoOS').value = "Viatura"; 
     
-    // Zera e atualiza os campos de Raio/Local
     document.getElementById('valorRaio').value = '';
-    document.getElementById('tipoAtividade').value = "Preleção"; // Reset para o padrão
-    verificarTravamentoCampos(); // Atualiza o estado visual
+    document.getElementById('tipoAtividade').value = "Preleção"; 
+    verificarTravamentoCampos(); 
 
     renderizarTabelaAtividades();
 }
@@ -174,7 +193,7 @@ function liberarFracionamento() {
     btn.className = "btn-cancelar";
     btn.setAttribute('onclick', 'cancelarCriacao()');
     carregarSugestoesLocais();
-    verificarTravamentoCampos(); // Garante estado correto ao abrir
+    verificarTravamentoCampos(); 
 }
 
 function cancelarCriacao() {
@@ -195,6 +214,7 @@ function adicionarFracao() {
     
     const raioValor = document.getElementById('valorRaio').value;
     const raioUnidade = document.getElementById('unidadeRaio').value;
+    const inicioGeralOS = document.getElementById('inicioGeral').value; // Necessário para ordenação
 
     if (!inicio || !fim) {
         alert("Preencha os horários.");
@@ -206,11 +226,9 @@ function adicionarFracao() {
         return;
     }
 
-    // --- VALIDAÇÃO DE OBRIGATORIEDADE DE LOCAL ---
     const isentos = ['Preleção', 'Intervalo', 'Retorno Base', 'Deslocamento'];
     const precisaDeLocal = !isentos.includes(tipo);
 
-    // Se precisa de local e está vazio, bloqueia
     if (precisaDeLocal && !local) {
         alert("Localização é obrigatória para esta atividade (Baseamento ou Patrulhamento).");
         return;
@@ -230,19 +248,22 @@ function adicionarFracao() {
     };
 
     listaAtividadesTemporaria.push(ativ);
-    listaAtividadesTemporaria.sort((a, b) => a.inicio.localeCompare(b.inicio));
+    
+    // --- ORDENAÇÃO INTELIGENTE (CORRIGIDO) ---
+    // Ordena considerando a virada do dia baseado no inicioGeral da OS
+    listaAtividadesTemporaria.sort((a, b) => {
+        const minA = calcularMinutosParaOrdenacao(a.inicio, inicioGeralOS);
+        const minB = calcularMinutosParaOrdenacao(b.inicio, inicioGeralOS);
+        return minA - minB;
+    });
+
     renderizarTabelaAtividades();
     
     // Limpa campos
     document.getElementById('inicioFracao').value = '';
     document.getElementById('terminoFracao').value = '';
-    
-    // Limpa e reseta visual
     document.getElementById('localAtividade').value = '';
     document.getElementById('valorRaio').value = ''; 
-    // Mantém o tipo selecionado ou volta para padrão? 
-    // Geralmente mantemos para facilitar inserts sequenciais, 
-    // mas chamamos a verificação para garantir
     verificarTravamentoCampos(); 
 }
 
@@ -405,6 +426,14 @@ function editarOS(index) {
     document.getElementById('turnoDuracao').value = "0"; 
 
     listaAtividadesTemporaria = [...os.atividades];
+    
+    // REORDENA AO CARREGAR (Correção para OS antigas que ficaram desordenadas)
+    listaAtividadesTemporaria.sort((a, b) => {
+        const minA = calcularMinutosParaOrdenacao(a.inicio, os.inicioGeral);
+        const minB = calcularMinutosParaOrdenacao(b.inicio, os.inicioGeral);
+        return minA - minB;
+    });
+
     renderizarTabelaAtividades();
 
     document.getElementById('formTitle').innerText = `Atualizando OS: ${os.numero}`;

@@ -169,15 +169,23 @@ function carregarEnderecos() {
     const tbody = document.getElementById('listaEnderecos');
     tbody.innerHTML = '';
 
-    const locaisFiltrados = locais.filter(l => l.status === statusFiltroAtual);
+    // Filtra primeiro
+    let locaisFiltrados = locais.filter(l => l.status === statusFiltroAtual);
+
+    // --- NOVO: Ordenação Alfabética pelo Apelido ---
+    locaisFiltrados.sort((a, b) => {
+        // localeCompare garante que 'Água' venha perto de 'Agua' e ignora maiúsculas/minúsculas
+        return a.apelido.localeCompare(b.apelido, 'pt-BR', { sensitivity: 'base' });
+    });
 
     if (locaisFiltrados.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">Nenhum local ${statusFiltroAtual.toLowerCase()} encontrado.</td></tr>`;
         return;
     }
 
-    locaisFiltrados.forEach((local, index) => {
+    locaisFiltrados.forEach((local) => {
         // Encontrar índice original no array principal para editar corretamente
+        // Como reordenamos a lista visual, o índice visual não bate com o do banco
         const indexOriginal = locais.findIndex(l => l.id === local.id);
         
         const classeStatus = local.status === 'Ativo' ? 'status-ativa' : 'status-inativa';
