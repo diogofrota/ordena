@@ -39,7 +39,7 @@ function popularSelects() {
     const recursosEmUso = escalasAtivas.map(e => e.recursoId || e.prefixo);
     const osEmUso = escalasAtivas.map(e => e.osNumero.toString());
 
-    // VIATURAS (Usa o tipo cadastrado: Carro, Moto, etc)
+    // VIATURAS
     const vtrsDisponiveis = viaturas.filter(v => v.status === 'Ativa' && !recursosEmUso.includes(v.prefixo));
     if (vtrsDisponiveis.length > 0) {
         const groupVtr = document.createElement('optgroup');
@@ -47,7 +47,6 @@ function popularSelects() {
         vtrsDisponiveis.forEach(v => {
             let opt = document.createElement('option');
             opt.value = v.prefixo;
-            // AQUI ESTÁ O TRUQUE: Usa v.tipo se existir, senão 'Viatura'
             opt.dataset.tipo = v.tipo || "Viatura"; 
             opt.innerHTML = `[${opt.dataset.tipo}] ${v.prefixo} (${v.placa})`;
             groupVtr.appendChild(opt);
@@ -120,7 +119,7 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
     alert("Serviço ativado com sucesso!"); popularSelects(); exibirMonitoramento(); 
 });
 
-// --- MONITORAMENTO (ATUALIZADO) ---
+// --- MONITORAMENTO (CORRIGIDO BUG DA DATA) ---
 function exibirMonitoramento() {
     const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
     const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
@@ -141,15 +140,31 @@ function exibirMonitoramento() {
         let classeTempo = "";
         let deveFinalizar = false;
 
-        if (os && os.terminoGeral) {
+        // LÓGICA DE TEMPO CORRIGIDA
+        if (os && os.terminoGeral && os.inicioGeral) {
             const [hFim, mFim] = os.terminoGeral.split(':').map(Number);
-            let dataFimOS = new Date();
-            dataFimOS.setHours(hFim, mFim, 0, 0);
             const [hIni, mIni] = os.inicioGeral.split(':').map(Number);
-            if (hFim < hIni && agora.getHours() >= hIni) { dataFimOS.setDate(dataFimOS.getDate() + 1); }
-            const diffMs = dataFimOS - agora;
-            if (diffMs <= 0) { deveFinalizar = true; } 
-            else {
+            
+            // 1. Pega a data REAL de quando a equipe foi ativada (pode ser ontem)
+            let dataInicioReal = new Date(escala.dataInicio);
+            
+            // 2. Calcula a data de fim prevista baseada na data de inicio
+            let dataFimPrevista = new Date(dataInicioReal);
+            dataFimPrevista.setHours(hFim, mFim, 0, 0);
+
+            // 3. Se o horário de fim é menor que o início (Ex: 06:00 < 22:00), 
+            // significa que o turno acaba no dia seguinte da ativação.
+            if (hFim < hIni) {
+                dataFimPrevista.setDate(dataFimPrevista.getDate() + 1);
+            }
+
+            // 4. Calcula a diferença entre o Fim Previsto e Agora
+            const diffMs = dataFimPrevista - agora;
+
+            if (diffMs <= 0) { 
+                // Se o tempo já passou (negativo), finaliza
+                deveFinalizar = true; 
+            } else {
                 const horasRest = Math.floor(diffMs / (1000 * 60 * 60));
                 const minsRest = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
                 textoTempo = `${horasRest}h ${minsRest}m`;
@@ -171,11 +186,13 @@ function exibirMonitoramento() {
         if (os) {
             const horaStr = `${agora.getHours().toString().padStart(2,'0')}:${agora.getMinutes().toString().padStart(2,'0')}`;
             const atividade = os.atividades.find(at => {
+                // Aqui usamos lógica de string simples HH:MM para atividades diárias
+                // Se a atividade cruzar a meia noite no futuro, precisará de logica similar à acima
+                // Mas para o MVP, assume-se atividades dentro do turno
                 return horaStr >= at.inicio && horaStr <= at.fim;
             });
 
             if (atividade) {
-                // Sem ícones, apenas texto limpo
                 atividadeInfo = `
                     <div style="margin-bottom: 2px;">
                         <span class="atividade-titulo" style="color:#28a745;">● ${atividade.tipo}</span>
@@ -186,8 +203,6 @@ function exibirMonitoramento() {
             }
         }
 
-        // TIPO EXATO (Sem imagem)
-        // escala.tipoRecurso deve vir como "Carro", "Moto", etc do select
         const tipoExato = escala.tipoRecurso || 'Viatura'; 
 
         corpoTabela.innerHTML += `
@@ -209,7 +224,6 @@ function exibirMonitoramento() {
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
                     <button onclick="verificarCheckGPS('${escala.id}')" class="btn-check-gps" title="Validar Posição">GPS</button>
-                    
                     <button onclick="gerarPDFEscalamento(${index})" class="btn-info" style="margin-right: 5px;">PDF</button>
                     <button onclick="finalizarTurno(${escala.id}, false)" class="btn-danger">Baixa</button>
                 </td>
@@ -219,7 +233,6 @@ function exibirMonitoramento() {
 }
 
 function verificarCheckGPS(escalaId) {
-    // Integração futura com API
     console.log(`Check GPS ID: ${escalaId}`);
     alert("API GPS: Posição Validada com Sucesso.");
 }
