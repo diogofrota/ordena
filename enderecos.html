@@ -93,21 +93,45 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="logo">ORDENA | Sistema de Gestão</div>
-        <div class="menu">
-            <a href="index.html">Inicio</a>
-            <a href="cadastro.html">Viaturas</a>
-            <a href="cabines.html">Cabines</a>
-            <a href="enderecos.html" class="active">Locais</a>
-            <a href="os.html">Ordens de Serviço</a>
-            <a href="escalamento.html">Ativação</a>
-            <a href="historico.html">Histórico</a>
-            <a href="mapa_tatico.html">Mapa Tático</a>
-            <a href="dashboard.html">Dashboard</a>
-        </div>
-           
-    </nav>
+<nav>
+    <div class="logo">
+        ORDENA 
+    </div>
+    
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
+        ☰
+    </button>
+</nav>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <span>MENU</span>
+        <button class="close-btn" onclick="toggleSidebar()">✕</button>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li><a href="index.html">Início</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
+            <ul class="submenu">
+                <li><a href="cadastro.html">● Viaturas</a></li>
+                <li><a href="cabines.html">● Cabines</a></li>
+                <li><a href="setores.html">● Setores a Pé</a></li>
+            </ul>
+        </li>
+
+        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
+        <li><a href="os.html">QMD (Missões)</a></li> 
+        <li><a href="escalamento.html">Ativação</a></li>
+        <li><a href="historico.html">Histórico</a></li>
+        <li><a href="mapa_tatico.html">Mapa Tático</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+</div>
+<script src="menu.js"></script>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
     <main>
         <div class="card-container-main">
