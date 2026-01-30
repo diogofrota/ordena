@@ -46,25 +46,28 @@ function carregarHistorico() {
             equipeQtd = 1;
         }
 
+        // RESPONSIVO: data-label adicionado
         tbody.innerHTML += `
             <tr>
-                <td>
+                <td data-label="Data / Período">
                     <strong>${dataFormatada}</strong><br>
                     <small>${horaIni} às ${horaFim}</small>
                 </td>
-                <td>
+                <td data-label="OS / Viatura">
                     <span style="color:#1a237e; font-weight:bold;">OS ${item.osNumero}</span><br>
                     Viatura: ${item.prefixo}
                 </td>
-                <td>
+                <td data-label="Comando da Equipe">
                     ${cmdTexto}<br>
                     ${equipeQtd > 1 ? `<small style="color:#28a745">+ ${equipeQtd - 1} Auxiliares</small>` : ''}
                 </td>
-                <td>
+                <td data-label="Duração">
                     <span class="status-badge" style="background:#6c757d;">${duracao}</span>
                 </td>
-                <td style="text-align: center;">
-                    <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 5px 10px; font-size: 0.8rem;">📄 Relatório</button>
+                <td data-label="Ações" style="text-align: center;">
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 5px 10px; font-size: 0.8rem;">📄 Relatório</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -183,43 +186,4 @@ function reimprimirPDF(index) {
     }
 
     doc.save(`Historico_OS${escala.osNumero}_${escala.prefixo}.pdf`);
-}
-
-// ... código anterior igual ...
-
-    historico.forEach((item, index) => {
-        const dataIni = new Date(item.dataInicio);
-        const dataFim = new Date(item.dataFim);
-        
-        // ... cálculos de data iguais ...
-
-        // Fallback para dados antigos
-        const recursoShow = item.recursoId || item.prefixo;
-        const tipoShow = item.tipoRecurso || 'Viatura';
-        const quemBaixou = item.responsavelBaixa || 'Manual';
-
-        tbody.innerHTML += `
-            <tr>
-                <td>
-                    <strong>${dataIni.toLocaleDateString('pt-BR')}</strong><br>
-                    <small>${dataIni.toLocaleTimeString()} - ${dataFim.toLocaleTimeString()}</small>
-                </td>
-                <td>
-                    <span style="color:#1a237e; font-weight:bold;">OS ${item.osNumero}</span><br>
-                    ${tipoShow}: ${recursoShow}
-                </td>
-                <td>
-                    ${item.equipe[0].posto} ${item.equipe[0].nome}<br>
-                    <small style="color:#666">Baixa por: ${quemBaixou}</small>
-                </td>
-                <td>
-                    <span class="status-badge" style="background:#6c757d;">Encerrado</span>
-                </td>
-                <td style="text-align: center;">
-                    <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 5px 10px; font-size: 0.8rem;">📄 Relatório</button>
-                </td>
-            </tr>
-        `;
-    });
-
-// ... resto do código igual ...
+};

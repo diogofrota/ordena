@@ -9,7 +9,23 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
         #map { width: 100%; min-height: 400px; border-radius: 8px; border: 2px solid #ddd; z-index: 1; }
-        .input-locked { background-color: #e9ecef; color: #495057; cursor: not-allowed; font-family: monospace; }
+        
+        .input-locked {
+            background-color: #e9ecef !important;
+            color: #555 !important;
+            cursor: not-allowed;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+            font-family: inherit;
+        }
+
+        #codigoFinal {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #1a237e !important;
+            letter-spacing: 1px;
+        }
+        
         .filter-btn { padding: 8px 16px; border: 1px solid #1a237e; background: white; color: #1a237e; cursor: pointer; border-radius: 20px; font-weight: 600; transition: all 0.3s; }
         .filter-btn.active { background: #1a237e; color: white; }
         .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
@@ -19,24 +35,14 @@
 </head>
 <body>
 <nav>
-    <div class="logo">
-        ORDENA 
-    </div>
-    
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
-        ☰
-    </button>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
 </nav>
 
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <span>MENU</span>
-        <button class="close-btn" onclick="toggleSidebar()">✕</button>
-    </div>
-
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
     <ul class="sidebar-menu">
         <li><a href="index.html">Início</a></li>
-        
         <li class="has-submenu">
             <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
             <ul class="submenu">
@@ -45,24 +51,50 @@
                 <li><a href="setores.html">● Setores a Pé</a></li>
             </ul>
         </li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais  ▾</a>
+            <ul class="submenu">
+                <li><a href="enderecos.html">● Baseamento</a></li>
+                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
+            </ul>
+        </li>
 
-        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
-        <li><a href="os.html">QMD (Missões)</a></li> 
+        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
+            <ul class="submenu">
+                <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="especiais.html">● Ordens Especiais </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
+        <li><a href="planejamento.html">Planejamento</a></li>
         <li><a href="escalamento.html">Ativação</a></li>
-        <li><a href="historico.html">Histórico</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
+            <ul class="submenu">
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
 </div>
-
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 <script src="menu.js"></script>
 
-<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
     <main>
         <div class="card-container-main">
             <h2>Cadastrar Novo Setor de Policiamento</h2>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
-                Defina a área de atuação (Setor). O código será gerado automaticamente: <strong>S-XX-YYYY</strong>.
+                Arraste o pino para o centro do setor. O endereço é preenchido automaticamente.
             </p>
 
             <div class="row" style="align-items: stretch;">
@@ -73,12 +105,8 @@
                         <div>
                             <div class="row">
                                 <div class="col-1">
-                                    <label>Cód. Convênio</label>
-                                    <input type="text" id="codConvenio" class="input-padrao" placeholder="Ex: 21" maxlength="2" required oninput="gerarCodigoAutomatico()">
-                                </div>
-                                <div class="col-1">
                                     <label>Código Setor (Auto)</label>
-                                    <input type="text" id="codigoFinal" class="input-padrao input-locked" readonly>
+                                    <input type="text" id="codigoFinal" class="input-padrao input-locked" readonly placeholder="...">
                                 </div>
                             </div>
 
@@ -88,41 +116,40 @@
                             </div>
 
                             <hr style="margin: 20px 0; border-color: #eee;">
+                            <label style="color:#1a237e; font-weight:bold;">Ponto Focal GPS (Automático)</label>
 
                             <div style="margin-bottom: 15px;">
-                                <label>Ponto Focal (Rua Principal)</label>
-                                <div style="display: flex; gap: 5px;">
-                                    <input type="text" id="nomeRua" class="input-padrao" placeholder="Nome da Rua" required>
-                                    <button type="button" onclick="buscarEnderecoNoMapa()" class="btn-info" style="padding: 0 15px;" title="Buscar no mapa">🔍</button>
-                                </div>
+                                <label>Logradouro Principal</label>
+                                <input type="text" id="nomeRua" class="input-padrao input-locked" readonly placeholder="Arraste o pino...">
                             </div>
 
                             <div class="row">
+                                <div class="col-1">
+                                    <label>Número (Ref.)</label>
+                                    <input type="text" id="numero" class="input-padrao input-locked" readonly placeholder="S/N">
+                                </div>
                                 <div class="col-2">
                                     <label>Bairro</label>
-                                    <input type="text" id="bairro" class="input-padrao" placeholder="Bairro">
-                                </div>
-                                <div class="col-2">
-                                    <label>Cidade</label>
-                                    <input type="text" id="cidade" class="input-padrao" value="Rio de Janeiro">
+                                    <input type="text" id="bairro" class="input-padrao input-locked" readonly placeholder="Bairro">
                                 </div>
                             </div>
 
                             <div class="row">
-                                <div class="col-1">
-                                    <label style="color: #1a237e;">Latitude (Centro)</label>
-                                    <input type="text" id="latitude" class="input-padrao input-locked" readonly>
+                                <div class="col-2">
+                                    <label>Cidade</label>
+                                    <input type="text" id="cidade" class="input-padrao input-locked" value="Rio de Janeiro" readonly>
                                 </div>
-                                <div class="col-1">
-                                    <label style="color: #1a237e;">Longitude (Centro)</label>
-                                    <input type="text" id="longitude" class="input-padrao input-locked" readonly>
-                                </div>
+                            </div>
+
+                            <div class="row" style="display:none;">
+                                <div class="col-1"><input type="text" id="latitude"></div>
+                                <div class="col-1"><input type="text" id="longitude"></div>
                             </div>
                         </div>
 
-                        <div class="row" style="margin-bottom: 0;">
+                        <div class="row btn_salvar_vtr" style="margin-bottom: 0;">
                             <button type="submit" id="btnSalvar" class="btn-primary" style="flex: 1;">Salvar Setor</button>
-                            <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button>
+                            <!-- <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button> -->
                         </div>
                     </form>
                 </div>
@@ -131,7 +158,7 @@
                     <label>Abrangência Geográfica</label>
                     <div id="map" style="flex: 1;"></div>
                     <small id="statusMapa" style="display: block; text-align: center; margin-top: 5px; color: #666; font-style: italic;">
-                        Posicione o pino no centro do setor de atuação...
+                        Posicione o pino no centro do setor...
                     </small>
                 </div>
             </div>
@@ -151,8 +178,10 @@
                     <thead>
                         <tr>
                             <th>Código</th>
-                            <th>Identificação do Setor</th>
-                            <th>Ponto Focal</th>
+                            <th>Identificação</th>
+                            <th>Logradouro</th>
+                            <th>Bairro</th>
+                            <th>Município</th>
                             <th>GPS</th>
                             <th>Status</th>
                             <th style="text-align: center;">Ações</th>

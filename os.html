@@ -15,36 +15,41 @@
         .status-ativa { background: #d4edda; color: #155724; }
         .status-inativa { background: #f8d7da; color: #721c24; }
         .btn-cancelar { background-color: #6c757d !important; color: white; width: 100%; }
-        .header-controls .col-1 { flex: 1; }
         
-        /* Classe para inputs travados (visual cinza) */
-        .input-travado {
-            background-color: #e9ecef !important;
-            color: #6c757d;
-            cursor: not-allowed;
+        .input-travado { background-color: #e9ecef !important; color: #6c757d; cursor: not-allowed; }
+
+        /* --- CORREÇÃO DOS BOTÕES (MOBILE) --- */
+        .acoes-container {
+            display: flex;
+            justify-content: flex-end;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap; /* Permite quebrar linha se faltar espaço */
+        }
+
+        @media (max-width: 900px) {
+            .acoes-container {
+                justify-content: center;
+                width: 100%;
+            }
+            .acoes-container button {
+                flex: 1 1 auto; /* Botões crescem para encher a linha */
+                min-width: 80px;
+                margin-bottom: 4px;
+            }
         }
     </style>
 </head>
 <body>
 <nav>
-    <div class="logo">
-        ORDENA 
-    </div>
-    
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
-        ☰
-    </button>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
 </nav>
 
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <span>MENU</span>
-        <button class="close-btn" onclick="toggleSidebar()">✕</button>
-    </div>
-
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
     <ul class="sidebar-menu">
         <li><a href="index.html">Início</a></li>
-        
         <li class="has-submenu">
             <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
             <ul class="submenu">
@@ -53,18 +58,35 @@
                 <li><a href="setores.html">● Setores a Pé</a></li>
             </ul>
         </li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais  ▾</a>
+            <ul class="submenu">
+                <li><a href="enderecos.html">● Baseamento</a></li>
+                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
+            </ul>
+        </li>
 
-        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
-        <li><a href="os.html">QMD (Missões)</a></li> 
+        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
+            <ul class="submenu">
+                <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="especiais.html">● Ordens Especiais </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
+        <li><a href="planejamento.html">Planejamento</a></li> 
         <li><a href="escalamento.html">Ativação</a></li>
         <li><a href="historico.html">Histórico</a></li>
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
 </div>
-<script src="menu.js"></script>
-
 <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<script src="menu.js"></script>
 
     <main>
         <div class="card-container-main">
@@ -76,19 +98,15 @@
                         <label class="label-resumo">Nº OS (Automático)</label>
                         <input type="text" id="numOS" readonly class="input-padrao" style="background: #e9ecef; font-weight: bold; text-align: center;">
                     </div>
-                    
                     <div class="col-2">
                         <label class="label-resumo">Aplicação do Recurso (Tipo)</label>
                         <select id="tipoRecursoOS" class="input-padrao">
                             <option value="Viatura">Carro</option>
                             <option value="Moto">Motocicleta</option>
-                            <option value="Bicicleta">Bicicleta</option>
-                            <option value="Triciclo">Triciclo</option>
                             <option value="Cabine">Cabine</option>
-                            <option value="Setor">Setor</option>
+                            <option value="Setor">Setor a Pé</option>
                         </select>
                     </div>
-
                     <div class="col-3">
                         <label class="label-resumo">Missão / Operação</label>
                         <input type="text" id="nomeOS" placeholder="Descrição da missão" class="input-padrao">
@@ -103,7 +121,6 @@
                             <option value="6">6 Horas</option>
                             <option value="8">8 Horas</option>
                             <option value="12" selected>12 Horas</option>
-                            <option value="24">24 Horas</option>
                         </select>
                     </div>
                     <div class="col-1">
@@ -124,48 +141,27 @@
                 <h3 style="margin-bottom: 20px;">Roteiro de Atividades</h3>
                 
                 <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
-                    <div class="row">
+                    <div class="row" style="align-items: flex-end;">
                         <div class="col-2">
                             <label>Tipo de Atividade</label>
-                            <select id="tipoAtividade" class="input-padrao" onchange="verificarTravamentoCampos()">
+                            <select id="tipoAtividade" class="input-padrao" onchange="atualizarInterfaceAtividade()">
                                 <option value="Preleção">Preleção</option>
                                 <option value="Intervalo">Intervalo</option>
                                 <option value="Deslocamento">Deslocamento</option>
                                 <option value="Retorno Base">Retorno Base</option>
-
                                 <optgroup label="Tipos de Policiamento">
                                     <option value="Baseamento">Baseamento (Ponto Fixo)</option>
                                     <option value="Patrulhamento">Patrulhamento (Ronda)</option>
                                 </optgroup>
                             </select>
                         </div>
-
                         <div class="col-1">
-                            <label>Raio / Abrangência</label>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="number" id="valorRaio" class="input-padrao" placeholder="0" min="0">
-                                <select id="unidadeRaio" class="input-padrao" style="width: 80px;">
-                                    <option value="m">m</option>
-                                    <option value="km">km</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-1">
-                            <label>De</label>
+                            <label>Início</label>
                             <input type="time" id="inicioFracao" class="input-padrao">
                         </div>
                         <div class="col-1">
-                            <label>Até</label>
+                            <label>Término</label>
                             <input type="time" id="terminoFracao" class="input-padrao">
-                        </div>
-                    </div>
-
-                    <div class="row" style="align-items: flex-end;">
-                        <div class="col-3">
-                            <label>Localização / Ponto Focal</label>
-                            <input type="text" id="localAtividade" list="listaLocaisSugestao" placeholder="Digite ou selecione um local cadastrado..." class="input-padrao" autocomplete="off">
-                            <datalist id="listaLocaisSugestao"></datalist>
                         </div>
                         <div class="col-1">
                             <button type="button" onclick="adicionarFracao()" class="btn-info" style="width: 100%;">
@@ -173,20 +169,38 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="row" id="linhaLocalizacao" style="display: none; margin-top: 15px;">
+                        <div class="col-4" style="width: 100%;">
+                            <label id="labelLocal">Localização / Ponto Focal</label>
+                            <input type="text" id="localAtividade" list="listaLocaisSugestao" class="input-padrao" autocomplete="off" style="width: 100%;">
+                            <datalist id="listaLocaisSugestao"></datalist>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="table-responsive" style="margin-top: 20px;">
                     <table>
                         <thead>
-                            <tr><th>Atividade</th><th>Início</th><th>Fim</th><th>Local</th><th style="text-align: center;">Ação</th></tr>
+                            <tr>
+                                <th>Atividade</th>
+                                <th>Início</th>
+                                <th>Fim</th>
+                                <th>Local</th>
+                                <th>Logradouro</th>
+                                <th>Bairro</th>     
+                                <th>Município</th>  
+                                <th>Detalhes</th>
+                                <th style="text-align: center;">Ação</th>
+                            </tr>
                         </thead>
                         <tbody id="tabelaFracoesTemp"></tbody>
                     </table>
                 </div>
 
                 <div style="margin-top: 25px;">
-                    <label style="font-weight: bold; color: #1a237e;">Prescrições Diversas / Observações Gerais</label>
-                    <textarea id="prescricoesDiversas" class="input-padrao" style="height: 100px; padding: 10px; resize: vertical;" placeholder="Digite aqui orientações sobre uniforme, armamento, rádio, conduta, etc..."></textarea>
+                    <label style="font-weight: bold; color: #1a237e;">Prescrições Diversas</label>
+                    <textarea id="prescricoesDiversas" class="input-padrao" style="height: 100px; padding: 10px; resize: vertical;" placeholder="Orientações gerais..."></textarea>
                 </div>
                 <div style="margin-top: 30px;">
                     <button onclick="finalizarOS()" id="btnFinalizar" class="btn-success" style="width: 100%; height: 55px; font-size: 1.1rem;">
@@ -199,10 +213,9 @@
         <div class="card-container-main" style="margin-top: 30px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2>Banco de Ordens de Serviço</h2>
-                
                 <div style="display: flex; gap: 10px;">
                     <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ver Ativas</button>
-                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Ver Histórico (Inativas)</button>
+                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Ver Histórico</button>
                 </div>
             </div>
 

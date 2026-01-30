@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORDENA</title>
+    <title>ORDENA - Locais</title>
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     
@@ -19,14 +19,25 @@
             border: 2px solid #ddd;
             z-index: 1;
         }
+        
+        /* ESTILO DE INPUT TRAVADO (IGUAL SETORES) */
         .input-locked {
-            background-color: #e9ecef;
-            color: #495057;
+            background-color: #e9ecef !important;
+            color: #555 !important;
             cursor: not-allowed;
-            font-family: monospace;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+            font-family: inherit;
         }
 
-        /* Estilos de Filtro e Status */
+        /* ESTILO DO CÓDIGO AUTOMÁTICO */
+        #codigoFinal {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #1a237e !important;
+            letter-spacing: 1px;
+        }
+
         .filter-btn {
             padding: 8px 16px;
             border: 1px solid #1a237e;
@@ -50,9 +61,8 @@
         .status-ativa { background: #d4edda; color: #155724; }
         .status-inativa { background: #f8d7da; color: #721c24; }
 
-        /* Estilos do Modal (Janela de Mapa) */
         .modal-overlay {
-            display: none; /* Oculto por padrão */
+            display: none; 
             position: fixed;
             top: 0;
             left: 0;
@@ -94,24 +104,14 @@
 </head>
 <body>
 <nav>
-    <div class="logo">
-        ORDENA 
-    </div>
-    
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
-        ☰
-    </button>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
 </nav>
 
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <span>MENU</span>
-        <button class="close-btn" onclick="toggleSidebar()">✕</button>
-    </div>
-
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
     <ul class="sidebar-menu">
         <li><a href="index.html">Início</a></li>
-        
         <li class="has-submenu">
             <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
             <ul class="submenu">
@@ -120,78 +120,110 @@
                 <li><a href="setores.html">● Setores a Pé</a></li>
             </ul>
         </li>
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a>
+            <ul class="submenu">
+                <li><a href="enderecos.html">● Baseamento</a></li>
+                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
+            </ul>
+        </li>
 
-        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
-        <li><a href="os.html">QMD (Missões)</a></li> 
+        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
+            <ul class="submenu">
+                <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="especiais.html">● Ordens Especiais </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
+        <li><a href="planejamento.html">Planejamento</a></li>
         <li><a href="escalamento.html">Ativação</a></li>
-        <li><a href="historico.html">Histórico</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
+            <ul class="submenu">
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
 </div>
-<script src="menu.js"></script>
-
 <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<script src="menu.js"></script>
 
     <main>
         <div class="card-container-main">
             <h2>Cadastrar Novo Ponto de Interesse</h2>
             <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
-                Arraste o pino no mapa para preencher o endereço automaticamente ou digite e clique em "Buscar no Mapa".
+                Arraste o pino no mapa para preencher o endereço automaticamente.
             </p>
 
             <div class="row" style="align-items: flex-start;">
                 
                 <div class="col-1">
-                    <form id="formEndereco" style="display: block;">
-                        
-                        <div style="margin-bottom: 15px;">
-                            <label>Apelido do Local (Identificação Tática)</label>
-                            <input type="text" id="apelido" class="input-padrao" placeholder="Ex: Base Operacional 01" required>
-                        </div>
+                    <form id="formEndereco" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <input type="hidden" id="editIndex" value="-1">
 
-                        <div style="margin-bottom: 15px;">
-                            <label>Logradouro / Rua</label>
-                            <div style="display: flex; gap: 5px;">
-                                <input type="text" id="nomeRua" class="input-padrao" placeholder="Nome da Rua" required>
-                                <button type="button" onclick="buscarEnderecoNoMapa()" class="btn-info" style="padding: 0 15px;" title="Buscar endereço digitado no mapa">🔍</button>
+                        <div>
+                            <div class="row">
+                                <div class="col-1">
+                                    <label>Código Local (Auto)</label>
+                                    <input type="text" id="codigoFinal" class="input-padrao input-locked" readonly placeholder="...">
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label>Apelido do Local (Identificação Tática)</label>
+                                <input type="text" id="apelido" class="input-padrao" placeholder="Ex: Base Operacional 01" required>
+                            </div>
+
+                            <hr style="margin: 20px 0; border-color: #eee;">
+                            <label style="color:#1a237e; font-weight:bold;">Endereço via GPS (Automático)</label>
+
+                            <div style="margin-bottom: 15px;">
+                                <label>Logradouro</label>
+                                <input type="text" id="nomeRua" class="input-padrao input-locked" readonly placeholder="Arraste o pino no mapa...">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-1">
+                                    <label>Número (Aprox.)</label>
+                                    <input type="text" id="numero" class="input-padrao input-locked" readonly placeholder="S/N">
+                                </div>
+                                <div class="col-2">
+                                    <label>Bairro</label>
+                                    <input type="text" id="bairro" class="input-padrao input-locked" readonly placeholder="Bairro">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-2">
+                                    <label>Cidade</label>
+                                    <input type="text" id="cidade" class="input-padrao input-locked" value="Rio de Janeiro" readonly>
+                                </div>
+                                <div class="col-1">
+                                    <label>UF</label>
+                                    <input type="text" id="estado" class="input-padrao input-locked" value="RJ" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row" style="display:none;">
+                                <div class="col-1"><input type="text" id="latitude"></div>
+                                <div class="col-1"><input type="text" id="longitude"></div>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="col-1">
-                                <label>Número</label>
-                                <input type="text" id="numero" class="input-padrao" placeholder="S/N">
-                            </div>
-                            <div class="col-2">
-                                <label>Bairro</label>
-                                <input type="text" id="bairro" class="input-padrao" placeholder="Bairro">
-                            </div>
+                            <button type="submit" id="btnSalvar" class="btn-primary" style="flex: 1;">Salvar Localização</button>
+                            <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button>
                         </div>
-
-                        <div class="row">
-                            <div class="col-2">
-                                <label>Cidade</label>
-                                <input type="text" id="cidade" class="input-padrao" value="Rio de Janeiro">
-                            </div>
-                            <div class="col-1">
-                                <label>UF</label>
-                                <input type="text" id="estado" class="input-padrao input-locked" value="RJ" readonly>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-1">
-                                <label style="color: #1a237e;">Latitude</label>
-                                <input type="text" id="latitude" class="input-padrao input-locked" readonly>
-                            </div>
-                            <div class="col-1">
-                                <label style="color: #1a237e;">Longitude</label>
-                                <input type="text" id="longitude" class="input-padrao input-locked" readonly>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Salvar Localização</button>
                     </form>
                 </div>
 
@@ -219,8 +251,12 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Apelido / ID</th>
-                            <th>Endereço Completo</th>
+                            <th>Código</th>
+                            <th>Apelido</th>
+                            <th>Logradouro</th>
+                            <th>Bairro</th>
+                            <th>Município</th>
+                            <th>GPS</th>
                             <th>Status</th>
                             <th style="text-align: center;">Ações</th>
                         </tr>

@@ -61,10 +61,38 @@
             </ul>
         </li>
 
-        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
-        <li><a href="os.html">QMD (Missões)</a></li> 
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais  ▾</a>
+            <ul class="submenu">
+                <li><a href="enderecos.html">● Baseamento</a></li>
+                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
+            <ul class="submenu">
+                <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="especiais.html">● Ordens Especiais </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
         <li><a href="escalamento.html">Ativação</a></li>
-        <li><a href="historico.html">Histórico</a></li>
+        <li><a href="planejamento.html">Planejamento</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
+            <ul class="submenu">
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
@@ -87,8 +115,8 @@
                             <option value="">Selecione...</option>
                             <option value="Carro">Carro</option>
                             <option value="Moto">Moto</option>
-                            <option value="Bicicleta">Bicicleta</option>
-                            <option value="Triciclo">Triciclo</option>
+                            <!-- <option value="Bicicleta">Bicicleta</option>
+                            <option value="Triciclo">Triciclo</option> -->
                         </select>
                     </div>
 
@@ -106,18 +134,18 @@
                     </div>
                 </div>
 
-                <div class="row">
+                <!-- <div class="row btn_salvar_vtr"> -->
                     <button type="submit" id="btnSalvar" class="btn-primary" style="flex: 1;">Salvar Registro</button>
                     
-                    <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button>
-                </div>
+                    <!-- <button type="button" id="btnCancelar" class="btn-secondary" style="display:none; flex: 1;" onclick="cancelarEdicao()">Cancelar</button> -->
+                <!-- </div> -->
             </form>
         </div>
 
         <div class="card-container-main" style="margin-top: 30px;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2>Frota Cadastrada</h2>
+                <h2>Cadastradas</h2>
                 
                 <div style="display: flex; gap: 10px;">
                     <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ver Ativas</button>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Planejamento Diário</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        /* --- BARRA DE DIAS --- */
+        .dias-container { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; }
+        .dia-tab { flex: 1; min-width: 100px; text-align: center; padding: 15px 10px; background: white; border: 1px solid #ddd; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.2s; position: relative; }
+        .dia-tab:hover { background: #f0f4ff; }
+        .dia-tab.ativo { background: #1a237e; color: white; border-color: #1a237e; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .dia-tab .semana { font-size: 0.8rem; text-transform: uppercase; display: block; margin-bottom: 5px; }
+        .dia-tab .data { font-size: 1.2rem; }
+
+        /* --- CARD DE LANÇAMENTO --- */
+        .planning-card { background: #f8f9fa; border: 1px solid #c5cae9; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .label-destaque { color: #1a237e; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+
+        /* HEADER DO CARD COM BOTÃO COPIAR */
+        .planning-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-copy {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: 0.2s;
+        }
+        .btn-copy:hover { background-color: #f57c00; transform: translateY(-1px); }
+
+        /* --- TABELA OTIMIZADA --- */
+        table { font-size: 0.9rem; width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        thead th { background-color: #eee; color: #444; padding: 10px; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; border: none; }
+        tbody tr { background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        tbody tr:hover { transform: scale(1.005); }
+        td { padding: 12px 10px; vertical-align: middle; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
+        td:first-child { border-left: 1px solid #eee; border-radius: 6px 0 0 6px; }
+        td:last-child { border-right: 1px solid #eee; border-radius: 0 6px 6px 0; }
+
+        .col-seq { width: 50px; text-align: center; color: #999; font-weight: bold; }
+        .col-recurso { width: 100px; text-align: center; font-weight: bold; color: #333; }
+        
+        .cell-info { display: flex; flex-direction: column; gap: 4px; }
+        .info-titulo { font-weight: bold; font-size: 1em; color: #333; }
+        .info-sub { font-size: 0.85em; color: #666; }
+        
+        .badge-time { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; font-family: 'Segoe UI', sans-serif; margin-top: 2px; width: fit-content; }
+        .time-os { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .time-oe { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+
+        .col-sub { width: 18%; color: #e65100; font-weight: 600; font-size: 0.9em; line-height: 1.2; }
+        .col-oe-title { font-weight: bold; color: #d32f2f; font-size: 0.95em; }
+
+        .btn-icon { padding: 6px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 0.9rem; margin-left: 5px; transition: 0.2s; }
+        .btn-print { background: #17a2b8; color: white; }
+        .btn-del { background: #dc3545; color: white; }
+
+        @media (max-width: 900px) { .dia-tab { min-width: 80px; padding: 10px 5px; } .col-obs { display: none; } }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+    <ul class="sidebar-menu">
+        <li><a href="index.html">Início</a></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li><li><a href="especiais.html">● Ordens Especiais</a></li></ul></li>
+        <li><a href="planejamento.html" style="color: #1a237e; font-weight: bold;">Planejamento</a></li>
+        <li><a href="escalamento.html">Ativação</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
+            <ul class="submenu">
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
+        <li><a href="mapa_tatico.html">Mapa Tático</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+</div>
+<script src="menu.js"></script>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<main>
+    <div style="margin-bottom: 20px;">
+        <h2>Planejamento Semanal</h2>
+        <p style="color: #666;">Selecione o dia abaixo. <b style="color:#1a237e;">Nota:</b> OS e Sub-Ordens já alocadas hoje não aparecerão.</p>
+    </div>
+
+    <div id="barraDias" class="dias-container"></div>
+
+    <div class="planning-card">
+        <div class="planning-header">
+            <h3 style="margin: 0; color: #1a237e;">
+                Novo Planejamento: <span id="dataDisplay" style="color: #d32f2f;"></span>
+            </h3>
+            <button onclick="copiarDiaAnterior()" class="btn-copy">
+                📋 Copiar do Dia Anterior
+            </button>
+        </div>
+        
+        <div class="row" style="align-items: flex-end;">
+            <div class="col-1">
+                <label class="label-destaque">1. Recurso</label>
+                <select id="selRecurso" class="input-padrao" onchange="atualizarFiltros()">
+                    <option value="">Selecione...</option>
+                    <option value="Viatura">Viatura</option>
+                    <option value="Moto">Moto</option>
+                    <option value="Cabine">Cabine</option>
+                    <option value="Setor">Setor a Pé</option>
+                </select>
+            </div>
+
+            <div class="col-2">
+                <label class="label-destaque">2. OS Rotina (Disponíveis)</label>
+                <select id="selOSNormal" class="input-padrao" disabled>
+                    <option value="">Selecione o Recurso...</option>
+                </select>
+            </div>
+
+            <div class="col-2">
+                <label class="label-destaque">3. Evento (Compatível)</label>
+                <select id="selOE" class="input-padrao" disabled onchange="atualizarSubOrdens()">
+                    <option value="">Selecione o Recurso...</option>
+                </select>
+            </div>
+
+            <div class="col-2">
+                <label class="label-destaque">4. Sub-Ordem</label>
+                <select id="selSubOE" class="input-padrao" disabled>
+                    <option value="">...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 15px; align-items: flex-end;">
+            <div class="col-3">
+                <label>Observação / Detalhe</label>
+                <input type="text" id="obsPlanejamento" class="input-padrao" placeholder="Ex: Viatura do Comandante...">
+            </div>
+            <div class="col-1">
+                <button onclick="adicionarPlanejamento()" class="btn-success" style="width: 100%; height: 42px;">
+                    + Adicionar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-container-main">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3>Escala Planejada</h3>
+            <span id="contadorItens" class="status-pill status-ativa">0 Itens</span>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-seq">#</th>
+                        <th class="col-recurso">Recurso</th>
+                        
+                        <th style="width: 25%;">Dados da OS (Rotina)</th>
+                        <th style="width: 25%;">Dados do Evento (OE)</th>
+                        
+                        <th class="col-sub">Sub-Ordem</th>
+                        <th class="col-obs">Observação</th>
+                        <th style="width: 10%; text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPlanejamento"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script src="planejamento.js"></script>
+</body>
+</html>

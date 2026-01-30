@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ORDENA - Histórico Especiais</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .card-evento { background: white; border-left: 5px solid #6c757d; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); opacity: 0.9; }
+        .header-evento { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .titulo-evento { font-size: 1.3rem; font-weight: 800; color: #444; }
+        .recursos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; background: #f8f9fa; padding: 10px; border-radius: 6px; }
+        .recurso-item { text-align: center; border: 1px solid #ddd; padding: 5px; border-radius: 4px; background: white; }
+        .recurso-num { font-size: 1.1rem; font-weight: bold; color: #1a237e; display: block; }
+        .recurso-label { font-size: 0.7rem; color: #666; text-transform: uppercase; }
+        .obs-box { margin-top: 15px; background: #fff3cd; padding: 10px; border-radius: 4px; font-size: 0.9rem; border-left: 4px solid #ffc107; color: #856404; }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="logo">
+        ORDENA 
+    </div>
+    
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
+        ☰
+    </button>
+</nav>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <span>MENU</span>
+        <button class="close-btn" onclick="toggleSidebar()">✕</button>
+    </div>
+
+    <ul class="sidebar-menu">
+        <li><a href="index.html">Início</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
+            <ul class="submenu">
+                <li><a href="cadastro.html">● Viaturas</a></li>
+                <li><a href="cabines.html">● Cabines</a></li>
+                <li><a href="setores.html">● Setores a Pé</a></li>
+            </ul>
+        </li>
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a>
+            <ul class="submenu">
+                <li><a href="enderecos.html">● Baseamento</a></li>
+                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
+
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
+            <ul class="submenu">
+                <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="especiais.html">● Ordens Especiais </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
+        <li><a href="planejamento.html">Planejamento</a></li>
+        <li><a href="escalamento.html">Ativação</a></li>
+        
+        <li class="has-submenu">
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
+            <ul class="submenu">
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
+            </ul>
+        </li>
+
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
+        <li><a href="mapa_tatico.html">Mapa Tático</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+</div>
+<script src="menu.js"></script>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+    <ul class="sidebar-menu">
+        <li><a href="index.html">Início</a></li>
+        <li><a href="os.html">● Ordens Diárias</a></li>
+        <li><a href="especiais.html">● Ordens Especiais</a></li>
+        <li><a href="historico_especiais.html" style="color: #1a237e; font-weight: bold;">● Histórico Especiais</a></li>
+        <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+</div>
+<script src="menu.js"></script>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<main>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Arquivo Morto - Operações Encerradas</h2>
+        <a href="especiais.html" class="btn-primary" style="text-decoration: none;">Voltar para Ativas</a>
+    </div>
+
+    <div id="listaHistoricoEventos"></div>
+</main>
+
+<script src="historico_especiais.js"></script>
+</body>
+</html>

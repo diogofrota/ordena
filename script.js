@@ -1,3 +1,4 @@
+// Elementos do DOM (Específicos para Viaturas)
 const form = document.getElementById('viaturaForm');
 const listaViaturas = document.getElementById('listaViaturas');
 const editIndexField = document.getElementById('editIndex');
@@ -10,27 +11,43 @@ let statusFiltroAtual = 'Ativa';
 document.addEventListener('DOMContentLoaded', () => {
     migrarViaturasAntigas();
     exibirViaturas();
+    aplicarMascaras();
 });
 
-// --- MIGRAÇÃO DE DADOS (Agora inclui a flag temRadio) ---
+// --- MÁSCARAS E VALIDAÇÕES ---
+function aplicarMascaras() {
+    // 1. PLACA: Maiúsculas e limita tamanho
+    const inputPlaca = document.getElementById('placa');
+    if (inputPlaca) {
+        inputPlaca.addEventListener('input', function(e) {
+            let valor = e.target.value.toUpperCase();
+            valor = valor.replace(/[^A-Z0-9-]/g, ''); // Apenas Letras, Números e Traço
+            if (valor.length > 8) valor = valor.slice(0, 8);
+            e.target.value = valor;
+        });
+    }
+
+    // 2. RÁDIO: Apenas números
+    const inputRadio = document.getElementById('radio');
+    if (inputRadio) {
+        inputRadio.addEventListener('input', function(e) {
+            let valor = e.target.value.replace(/\D/g, ''); // Remove não números
+            if (valor.length > 7) valor = valor.slice(0, 7);
+            e.target.value = valor;
+        });
+    }
+}
+
+// --- MIGRAÇÃO DE DADOS ANTIGOS ---
 function migrarViaturasAntigas() {
     let viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
     let houveMudanca = false;
 
     viaturas.forEach(v => {
-        // 1. Garante Status
-        if (!v.status) {
-            v.status = 'Ativa';
-            houveMudanca = true;
-        }
-        // 2. Garante Tipo
-        if (!v.tipo) {
-            v.tipo = 'Carro';
-            houveMudanca = true;
-        }
-        // 3. Garante a Flag Booleana de Rádio (NOVO)
+        if (!v.status) { v.status = 'Ativa'; houveMudanca = true; }
+        if (!v.tipo) { v.tipo = 'Carro'; houveMudanca = true; }
+        // Se tem rádio preenchido, define a flag temRadio
         if (v.temRadio === undefined) {
-            // Se existir texto no rádio, é true. Se for vazio/null, é false.
             v.temRadio = (v.radio && v.radio.trim() !== "") ? true : false;
             houveMudanca = true;
         }
@@ -38,43 +55,39 @@ function migrarViaturasAntigas() {
 
     if (houveMudanca) {
         localStorage.setItem('viaturas', JSON.stringify(viaturas));
-        console.log("Banco de dados atualizado com flags de rádio.");
     }
 }
 
-// --- FILTRO ---
-function mudarFiltro(status) {
-    statusFiltroAtual = status;
-    document.getElementById('btnFiltroAtiva').className = status === 'Ativa' ? 'filter-btn active' : 'filter-btn';
-    document.getElementById('btnFiltroInativa').className = status === 'Inativa' ? 'filter-btn active' : 'filter-btn';
-    exibirViaturas();
-}
-
-// --- CRUD ---
+// --- CRUD (SALVAR) ---
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     
+    // Validação de Placa
+    const placa = document.getElementById('placa').value;
+    const placaLimpa = placa.replace('-', '');
+    if (placaLimpa.length < 7) {
+        alert("Erro: A Placa deve conter no mínimo 7 caracteres.");
+        return;
+    }
+
     let viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
     const index = parseInt(editIndexField.value);
-
-    // Captura o valor do input rádio e remove espaços em branco extras
     const radioInputValor = document.getElementById('radio').value.trim();
 
-    // Monta o objeto com a nova coluna booleana 'temRadio'
     const dadosForm = {
         tipo: document.getElementById('tipoVeiculo').value,
         prefixo: document.getElementById('prefixo').value,
-        placa: document.getElementById('placa').value,
+        placa: placa,
         radio: radioInputValor, 
-        temRadio: (radioInputValor !== "") // Se tiver texto é true, se vazio é false
+        temRadio: (radioInputValor !== "") 
     };
 
     if (index === -1) {
-        // Nova Viatura (nasce Ativa)
+        // Nova Viatura
         const novaViatura = { ...dadosForm, status: 'Ativa' };
         viaturas.push(novaViatura);
     } else {
-        // Edição (Preserva o status atual)
+        // Edição (Mantém o status original)
         const statusAtual = viaturas[index].status;
         viaturas[index] = { ...dadosForm, status: statusAtual };
         cancelarEdicao();
@@ -82,8 +95,17 @@ form.addEventListener('submit', (e) => {
 
     localStorage.setItem('viaturas', JSON.stringify(viaturas));
     form.reset();
+    alert("Viatura salva com sucesso!");
     exibirViaturas();
 });
+
+// --- LISTAGEM E FILTROS ---
+function mudarFiltro(status) {
+    statusFiltroAtual = status;
+    document.getElementById('btnFiltroAtiva').className = status === 'Ativa' ? 'filter-btn active' : 'filter-btn';
+    document.getElementById('btnFiltroInativa').className = status === 'Inativa' ? 'filter-btn active' : 'filter-btn';
+    exibirViaturas();
+}
 
 function exibirViaturas() {
     const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
@@ -103,30 +125,27 @@ function exibirViaturas() {
         
         let btnAcao = '';
         if (v.status === 'Ativa') {
-            btnAcao = `<button class="btn-danger" onclick="alternarStatus(${v.originalIndex})" title="Tirar de operação">Inativar</button>`;
+            btnAcao = `<button class="btn-danger" onclick="alternarStatus(${v.originalIndex})">Inativar</button>`;
         } else {
-            btnAcao = `<button class="btn-success" onclick="alternarStatus(${v.originalIndex})" title="Colocar em operação">Reativar</button>`;
+            btnAcao = `<button class="btn-success" onclick="alternarStatus(${v.originalIndex})">Reativar</button>`;
         }
 
-        let icone = ''; 
-        if (v.tipo === 'Moto') icone = '';
-        if (v.tipo === 'Bicicleta') icone = '';
-        if (v.tipo === 'Triciclo') icone = '';
-
-        // Usa a flag booleana ou o texto para decidir o que mostrar
-        // Se temRadio for true, mostra o ID. Se false, mostra um traço.
+        let icone = v.tipo === 'Moto' ? '🏍️' : '🚓';
         const radioVisual = v.temRadio ? `<span style="color:#1a237e; font-weight:bold;">${v.radio}</span>` : '<span style="color:#999;">-</span>';
 
+        // --- AQUI ESTÁ O LAYOUT RESPONSIVO (data-label) ---
         listaViaturas.innerHTML += `
             <tr>
-                <td>${icone} ${v.tipo}</td>
-                <td><strong>${v.prefixo}</strong></td>
-                <td>${v.placa}</td>
-                <td>${radioVisual}</td>
-                <td><span class="status-pill ${classeStatus}">${v.status}</span></td>
-                <td style="text-align: center;">
-                    <button class="btn-warning" style="margin-right: 5px;" onclick="prepararEdicao(${v.originalIndex})">Editar</button>
-                    ${btnAcao}
+                <td data-label="Tipo">${icone} ${v.tipo}</td>
+                <td data-label="Prefixo"><strong>${v.prefixo}</strong></td>
+                <td data-label="Placa">${v.placa}</td>
+                <td data-label="Rádio">${radioVisual}</td>
+                <td data-label="Status"><span class="status-pill ${classeStatus}">${v.status}</span></td>
+                <td data-label="Ações" style="text-align: center;">
+                    <div style="display: flex; gap: 5px; justify-content: flex-end;">
+                        <button class="btn-warning" onclick="prepararEdicao(${v.originalIndex})">Editar</button>
+                        ${btnAcao}
+                    </div>
                 </td>
             </tr>
         `;
@@ -140,39 +159,22 @@ function prepararEdicao(index) {
     document.getElementById('tipoVeiculo').value = v.tipo;
     document.getElementById('prefixo').value = v.prefixo;
     document.getElementById('placa').value = v.placa;
-    document.getElementById('radio').value = v.radio; // Carrega o valor real (texto) para editar
+    document.getElementById('radio').value = v.radio; 
     
     editIndexField.value = index;
     btnSalvar.innerText = "Atualizar Registro";
     btnSalvar.classList.remove('btn-primary');
     btnSalvar.classList.add('btn-info');
     
-    btnCancelar.style.display = "inline-block";
-    document.getElementById('tituloForm').innerText = "Editando Viatura " + v.prefixo;
+    // Mostra o botão cancelar
+    if(btnCancelar) btnCancelar.style.display = "inline-block";
+    
+    // Rola para o topo
+    document.querySelector('.card-container-main').scrollIntoView({ behavior: 'smooth' });
 }
 
 function cancelarEdicao() {
     editIndexField.value = "-1";
     btnSalvar.innerText = "Salvar Registro";
     
-    btnSalvar.classList.remove('btn-info');
-    btnSalvar.classList.add('btn-primary');
-    
-    btnCancelar.style.display = "none";
-    document.getElementById('tituloForm').innerText = "Cadastrar Nova Viatura";
-    form.reset();
-}
-
-function alternarStatus(index) {
-    let viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
-    const v = viaturas[index];
-    
-    const novoStatus = v.status === 'Ativa' ? 'Inativa' : 'Ativa';
-    const acaoTexto = v.status === 'Ativa' ? 'inativar' : 'reativar';
-
-    if(confirm(`Deseja realmente ${acaoTexto} a viatura ${v.prefixo}?`)) {
-        viaturas[index].status = novoStatus;
-        localStorage.setItem('viaturas', JSON.stringify(viaturas));
-        exibirViaturas();
-    }
-}
+    btnSalvar.classList.remove('btn-info');}

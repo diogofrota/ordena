@@ -1,7 +1,16 @@
+/**
+ * SISTEMA DE ATIVAÇÃO E ESCALAMENTO
+ * Conectado ao Planejamento Diário (Visualização do Tipo Real: Carro/Moto)
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     migrarEscalasAntigas(); 
-    popularSelects();
+    popularRecursosFisicos(); 
     exibirMonitoramento();
+    
+    const hoje = new Date();
+    document.getElementById('dataHojeDisplay').innerText = hoje.toLocaleDateString('pt-BR');
+    
     setInterval(exibirMonitoramento, 10000); 
 });
 
@@ -11,47 +20,64 @@ const DESPACHANTE = {
     id: "user_01"
 };
 
-// --- MIGRAÇÃO ---
+// --- MIGRAÇÃO LEGADO ---
 function migrarEscalasAntigas() {
     let escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
     let houveMudanca = false;
     escalas.forEach(e => {
-        if (e.prefixo && !e.recursoId) { e.recursoId = e.prefixo; e.tipoRecurso = "Viatura"; houveMudanca = true; }
-        if (!e.despachante) { e.despachante = { nome: "Sistema (Legado)", funcao: "Automático" }; houveMudanca = true; }
+        if (!e.planejamentoId && e.osNumero) { 
+            e.tipoEscala = "LEGADO"; 
+            houveMudanca = true; 
+        }
     });
     if (houveMudanca) { localStorage.setItem('escalasAtivas', JSON.stringify(escalas)); }
 }
 
-// --- POPULAR SELECTS ---
-function popularSelects() {
+// --- 1. POPULA OS RECURSOS FÍSICOS (VISUAL: CARRO/MOTO | LÓGICA: VIATURA/MOTO) ---
+function popularRecursosFisicos() {
     const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
     const cabines = JSON.parse(localStorage.getItem('cabines')) || [];
     const setores = JSON.parse(localStorage.getItem('setores')) || [];
-    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const escalasAtivas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
     
     const selectRecurso = document.getElementById('selectRecurso');
-    const selectOS = document.getElementById('selectOS');
-
     selectRecurso.innerHTML = '<option value="">Selecione o Recurso...</option>';
-    selectOS.innerHTML = '<option value="">Selecione a OS...</option>';
 
     const recursosEmUso = escalasAtivas.map(e => e.recursoId || e.prefixo);
-    const osEmUso = escalasAtivas.map(e => e.osNumero.toString());
 
-    // VIATURAS
-    const vtrsDisponiveis = viaturas.filter(v => v.status === 'Ativa' && !recursosEmUso.includes(v.prefixo));
-    if (vtrsDisponiveis.length > 0) {
-        const groupVtr = document.createElement('optgroup');
-        groupVtr.label = "Frota Veicular";
-        vtrsDisponiveis.forEach(v => {
+    // FROTA (CARROS E MOTOS)
+    const frotaDisponivel = viaturas.filter(v => v.status === 'Ativa' && !recursosEmUso.includes(v.prefixo));
+    
+    if (frotaDisponivel.length > 0) {
+        const groupFrota = document.createElement('optgroup');
+        groupFrota.label = "Frota Veicular";
+        
+        frotaDisponivel.forEach(v => {
             let opt = document.createElement('option');
             opt.value = v.prefixo;
-            opt.dataset.tipo = v.tipo || "Viatura"; 
-            opt.innerHTML = `[${opt.dataset.tipo}] ${v.prefixo} (${v.placa})`;
-            groupVtr.appendChild(opt);
+            
+            // --- LÓGICA INTELIGENTE ---
+            // 1. Tipo Real (Para o Usuário ler): Pega do cadastro (ex: "Carro", "Moto", "Van")
+            let tipoReal = v.tipo || "Viatura"; 
+            
+            // 2. Tipo Lógico (Para o Sistema filtrar):
+            // O Planejamento só conhece "Viatura" e "Moto". 
+            // Então, se for "Carro", "SUV", etc, mapeamos para "Viatura".
+            // Se for "Moto", mapeamos para "Moto".
+            let tipoLogico = "Viatura"; 
+            if (tipoReal.toLowerCase().includes("moto")) {
+                tipoLogico = "Moto";
+            }
+
+            // Salva o tipo lógico no dataset para o filtro funcionar
+            opt.dataset.tipo = tipoLogico; 
+            
+            // Mostra o tipo real no texto
+            opt.innerHTML = `[${tipoReal}] ${v.prefixo} (${v.placa})`;
+            
+            groupFrota.appendChild(opt);
         });
-        selectRecurso.appendChild(groupVtr);
+        selectRecurso.appendChild(groupFrota);
     }
 
     // CABINES
@@ -83,15 +109,55 @@ function popularSelects() {
         });
         selectRecurso.appendChild(groupSetor);
     }
+}
 
-    // OS
-    const ordensDisponiveis = ordens.filter(os => os.status === 'Ativa' && !osEmUso.includes(os.numero.toString()));
-    ordensDisponiveis.forEach(os => {
-        let opt = document.createElement('option');
-        opt.value = os.numero;
-        opt.innerHTML = `OS: ${os.numero} (${os.tipoRecurso || 'Geral'}) - ${os.nomeOS}`;
-        selectOS.appendChild(opt);
-    });
+// --- 2. FILTRA O PLANEJAMENTO ---
+function filtrarPlanejamentoPorRecurso() {
+    const selectRecurso = document.getElementById('selectRecurso');
+    const selectPlan = document.getElementById('selectPlanejamento');
+    
+    selectPlan.innerHTML = '<option value="">Selecione...</option>';
+    selectPlan.disabled = true;
+
+    if (!selectRecurso.value) return;
+
+    // Pega o tipo lógico (Viatura/Moto) que definimos acima
+    const tipoRecursoFisico = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo;
+    const planejamento = JSON.parse(localStorage.getItem('planejamentoDiario')) || [];
+    
+    const hoje = new Date();
+    const y = hoje.getFullYear();
+    const m = String(hoje.getMonth() + 1).padStart(2, '0');
+    const d = String(hoje.getDate()).padStart(2, '0');
+    const dataHojeISO = `${y}-${m}-${d}`;
+
+    const planosCompativeis = planejamento.filter(p => 
+        p.data === dataHojeISO && p.recurso === tipoRecursoFisico
+    );
+
+    if (planosCompativeis.length === 0) {
+        const opt = document.createElement('option');
+        opt.innerText = `Sem planejamento de ${tipoRecursoFisico} para hoje.`;
+        selectPlan.appendChild(opt);
+    } else {
+        selectPlan.disabled = false;
+        selectPlan.innerHTML = '<option value="">Selecione o Planejamento...</option>';
+        
+        planosCompativeis.forEach(plan => {
+            const opt = document.createElement('option');
+            opt.value = plan.id; 
+            
+            // Visualização: OS {Num} - {Missão} [-> {Evento}]
+            let texto = `OS ${plan.osNum} | ${plan.missaoOS}`;
+            
+            if (plan.oeId) {
+                texto = `OS ${plan.osNum} ➔ [OE] ${plan.nomeOE}: ${plan.textoSub}`;
+            }
+            
+            opt.innerHTML = texto;
+            selectPlan.appendChild(opt);
+        });
+    }
 }
 
 // --- INTEGRANTES ---
@@ -104,27 +170,60 @@ function adicionarIntegrante() {
 }
 function removerLinhaIntegrante(id) { document.getElementById(`integrante-${id}`).remove(); contadorIntegrantes--; }
 
-// --- SALVAR ---
+// --- SALVAR ATIVAÇÃO ---
 document.getElementById('escalamentoForm').addEventListener('submit', (e) => { 
     e.preventDefault(); 
+    
     const selectRecurso = document.getElementById('selectRecurso'); 
     const recursoId = selectRecurso.value; 
-    const tipoRecurso = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo || 'Viatura'; 
-    const osNumero = document.getElementById('selectOS').value; 
+    // Salva o tipo VISUAL (ex: Carro) para mostrar no painel, mas usa o LÓGICO para consistência se precisar
+    const tipoRecursoLogico = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo; 
+    // Pega o texto entre [] do option para salvar o tipo real (ex: Carro)
+    const textoOption = selectRecurso.options[selectRecurso.selectedIndex].text;
+    const tipoRecursoReal = textoOption.match(/\[(.*?)\]/)[1] || tipoRecursoLogico;
+
+    const planId = document.getElementById('selectPlanejamento').value; 
+    
+    if (!planId) return alert("Selecione um item do planejamento.");
+
+    const planejamento = JSON.parse(localStorage.getItem('planejamentoDiario')) || [];
+    const itemPlanejado = planejamento.find(p => p.id == planId);
+
+    if(!itemPlanejado) return alert("Erro: Planejamento não encontrado.");
+
     const comandante = { posto: document.getElementById('postoCmd').value, nome: document.getElementById('nomeCmd').value, rg: document.getElementById('rgCmd').value, tel: document.getElementById('telCmd').value, funcao: "Comandante" }; 
     const integrantesExtras = []; document.querySelectorAll('#listaIntegrantes .box-integrante').forEach(box => { integrantesExtras.push({ posto: box.querySelector('select[name="posto"]').value, nome: box.querySelector('input[name="nome"]').value, rg: box.querySelector('input[name="rg"]').value, funcao: "Auxiliar" }); }); 
-    const novaEscala = { id: Date.now(), dataInicio: new Date().toISOString(), recursoId: recursoId, tipoRecurso: tipoRecurso, osNumero: osNumero, despachante: DESPACHANTE, equipe: [comandante, ...integrantesExtras] }; 
-    let escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || []; escalas.push(novaEscala); localStorage.setItem('escalasAtivas', JSON.stringify(escalas)); 
-    document.getElementById('escalamentoForm').reset(); document.getElementById('listaIntegrantes').innerHTML = ''; contadorIntegrantes = 0; 
-    alert("Serviço ativado com sucesso!"); popularSelects(); exibirMonitoramento(); 
+    
+    const novaEscala = { 
+        id: Date.now(), 
+        dataInicio: new Date().toISOString(), 
+        recursoId: recursoId, 
+        tipoRecurso: tipoRecursoReal, // Salva "Carro" ou "Moto" para exibição
+        planejamentoId: planId,
+        osNumero: itemPlanejado.osNum,
+        missaoOS: itemPlanejado.missaoOS,
+        oeInfo: (itemPlanejado.oeId) ? { nome: itemPlanejado.nomeOE, sub: itemPlanejado.textoSub } : null,
+        despachante: DESPACHANTE, 
+        equipe: [comandante, ...integrantesExtras] 
+    }; 
+    
+    let escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || []; 
+    escalas.push(novaEscala); 
+    localStorage.setItem('escalasAtivas', JSON.stringify(escalas)); 
+    
+    document.getElementById('escalamentoForm').reset(); 
+    document.getElementById('listaIntegrantes').innerHTML = ''; 
+    contadorIntegrantes = 0; 
+    
+    alert("Guarnição ATIVADA com sucesso!"); 
+    popularRecursosFisicos(); 
+    exibirMonitoramento(); 
 });
 
-// --- MONITORAMENTO (CORRIGIDO BUG DA DATA) ---
+// --- MONITORAMENTO ---
 function exibirMonitoramento() {
     const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
-    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const corpoTabela = document.getElementById('listaMonitoramento');
-    const agora = new Date();
 
     corpoTabela.innerHTML = '';
 
@@ -134,98 +233,52 @@ function exibirMonitoramento() {
     }
 
     escalas.forEach((escala, index) => {
-        const os = ordens.find(o => o.numero == escala.osNumero);
+        let textoTempo = "Em andamento";
+        let classeTempo = "timer-box";
         
-        let textoTempo = "--:--";
-        let classeTempo = "";
-        let deveFinalizar = false;
-
-        // LÓGICA DE TEMPO CORRIGIDA
-        if (os && os.terminoGeral && os.inicioGeral) {
-            const [hFim, mFim] = os.terminoGeral.split(':').map(Number);
-            const [hIni, mIni] = os.inicioGeral.split(':').map(Number);
-            
-            // 1. Pega a data REAL de quando a equipe foi ativada (pode ser ontem)
-            let dataInicioReal = new Date(escala.dataInicio);
-            
-            // 2. Calcula a data de fim prevista baseada na data de inicio
-            let dataFimPrevista = new Date(dataInicioReal);
-            dataFimPrevista.setHours(hFim, mFim, 0, 0);
-
-            // 3. Se o horário de fim é menor que o início (Ex: 06:00 < 22:00), 
-            // significa que o turno acaba no dia seguinte da ativação.
-            if (hFim < hIni) {
-                dataFimPrevista.setDate(dataFimPrevista.getDate() + 1);
-            }
-
-            // 4. Calcula a diferença entre o Fim Previsto e Agora
-            const diffMs = dataFimPrevista - agora;
-
-            if (diffMs <= 0) { 
-                // Se o tempo já passou (negativo), finaliza
-                deveFinalizar = true; 
-            } else {
-                const horasRest = Math.floor(diffMs / (1000 * 60 * 60));
-                const minsRest = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                textoTempo = `${horasRest}h ${minsRest}m`;
-                if (horasRest === 0 && minsRest < 30) classeTempo = "timer-danger"; 
-                else if (horasRest === 0) classeTempo = "timer-warning"; 
-                else classeTempo = "timer-box";
-            }
-        }
-
-        if (deveFinalizar) { finalizarTurno(escala.id, true); return; }
-
-        let cmd = escala.equipe ? escala.equipe[0] : { posto: '', nome: 'Comandante', rg: escala.rgComandante || '-' };
+        let cmd = escala.equipe ? escala.equipe[0] : { posto: '', nome: 'Comandante' };
         let totalIntegrantes = escala.equipe ? escala.equipe.length : 1;
         
-        // --- Status e Local ---
-        let atividadeInfo = `<span style="color:#777;">Aguardando Início</span>`;
-        let missaoNome = os ? os.nomeOS : "MISSÃO INDEFINIDA";
-
-        if (os) {
-            const horaStr = `${agora.getHours().toString().padStart(2,'0')}:${agora.getMinutes().toString().padStart(2,'0')}`;
-            const atividade = os.atividades.find(at => {
-                // Aqui usamos lógica de string simples HH:MM para atividades diárias
-                // Se a atividade cruzar a meia noite no futuro, precisará de logica similar à acima
-                // Mas para o MVP, assume-se atividades dentro do turno
-                return horaStr >= at.inicio && horaStr <= at.fim;
-            });
-
-            if (atividade) {
-                atividadeInfo = `
-                    <div style="margin-bottom: 2px;">
-                        <span class="atividade-titulo" style="color:#28a745;">● ${atividade.tipo}</span>
-                        <span class="atividade-horario">${atividade.inicio} - ${atividade.fim}</span>
-                    </div>
-                    <div class="atividade-local">${atividade.local}</div>
-                `;
-            }
+        let statusHTML = "";
+        
+        if (escala.oeInfo) {
+            statusHTML = `
+                <div class="missao-destaque" style="color:#d32f2f;">EVENTO: ${escala.oeInfo.nome}</div>
+                <div style="font-size:0.85rem; color:#555;">
+                    <span class="badge-tipo-oe">OE</span> ${escala.oeInfo.sub}
+                </div>
+                <div style="font-size:0.8rem; margin-top:3px; color:#777;">Base: OS ${escala.osNumero}</div>
+            `;
+        } else {
+            statusHTML = `
+                <div class="missao-destaque">ROTINA: ${escala.missaoOS || 'OS ' + escala.osNumero}</div>
+                <div style="font-size:0.85rem;">
+                    <span class="badge-tipo-os">OS</span> Nº ${escala.osNumero}
+                </div>
+            `;
         }
-
-        const tipoExato = escala.tipoRecurso || 'Viatura'; 
 
         corpoTabela.innerHTML += `
             <tr>
                 <td>
-                    <strong style="color:#1a237e; font-size:1.1rem;">${tipoExato}: ${escala.recursoId || escala.prefixo}</strong><br>
-                    <small style="color:#555;">OS ${escala.osNumero} (${os ? os.inicioGeral : ''} - ${os ? os.terminoGeral : ''})</small>
+                    <strong style="color:#1a237e; font-size:1.1rem;">${escala.tipoRecurso}: ${escala.recursoId}</strong><br>
+                    <small style="color:#555;">Início: ${new Date(escala.dataInicio).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small>
                 </td>
                 <td>
                     <strong>${cmd.posto} ${cmd.nome}</strong><br>
                     <small>+ ${totalIntegrantes - 1} Auxiliares</small>
                 </td>
                 <td>
-                    <span class="missao-destaque">MISSÃO: ${missaoNome}</span>
-                    ${atividadeInfo}
+                    ${statusHTML}
                 </td>
                 <td style="text-align:center;">
                     <span class="${classeTempo}">${textoTempo}</span>
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
-                    <button onclick="verificarCheckGPS('${escala.id}')" class="btn-check-gps" title="Validar Posição">GPS</button>
-                    <button onclick="gerarPDFEscalamento(${index})" class="btn-info" style="margin-right: 5px;">PDF</button>
-                    <button onclick="finalizarTurno(${escala.id}, false)" class="btn-danger">Baixa</button>
+                    <div style="display:flex; justify-content: flex-end; gap:5px;">
+                        <button onclick="verificarCheckGPS('${escala.id}')" class="btn-check-gps" title="Validar Posição">GPS</button>
+                        <button onclick="finalizarTurno(${escala.id}, false)" class="btn-danger">Baixa</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -233,7 +286,6 @@ function exibirMonitoramento() {
 }
 
 function verificarCheckGPS(escalaId) {
-    console.log(`Check GPS ID: ${escalaId}`);
     alert("API GPS: Posição Validada com Sucesso.");
 }
 
@@ -243,44 +295,15 @@ function finalizarTurno(id, automatico = false) {
     const index = ativas.findIndex(e => e.id === id);
     if (index > -1) {
         const escala = ativas[index];
-        if (!automatico && !confirm(`Confirma a baixa manual do recurso ${escala.recursoId || escala.prefixo}?`)) return;
+        if (!automatico && !confirm(`Confirma a baixa de ${escala.recursoId}?`)) return;
         escala.dataFim = new Date().toISOString();
         escala.baixaAutomatica = automatico;
-        escala.responsavelBaixa = automatico ? "SISTEMA AUTOMÁTICO" : DESPACHANTE.nome;
+        escala.responsavelBaixa = automatico ? "SISTEMA" : DESPACHANTE.nome;
         historico.push(escala);
         localStorage.setItem('historicoEscalas', JSON.stringify(historico));
         ativas.splice(index, 1);
         localStorage.setItem('escalasAtivas', JSON.stringify(ativas));
-        if(!automatico) { popularSelects(); exibirMonitoramento(); }
+        popularRecursosFisicos(); 
+        exibirMonitoramento(); 
     }
-}
-
-function gerarPDFEscalamento(index) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
-    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
-    const escala = escalas[index];
-    const os = ordens.find(o => o.numero == escala.osNumero);
-    if (!os) return alert("Erro: OS não encontrada.");
-
-    doc.setFontSize(18); doc.setTextColor(26, 35, 126); doc.text(`ORDEM DE ATIVAÇÃO DE SERVIÇO`, 14, 20);
-    doc.setFontSize(10); doc.setTextColor(100); doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 26);
-    doc.setDrawColor(0); doc.line(14, 30, 196, 30);
-    doc.setTextColor(0); doc.setFontSize(11);
-    doc.text(`Recurso: ${escala.tipoRecurso || 'Viatura'} ${escala.recursoId || escala.prefixo}`, 14, 40);
-    doc.text(`Ordem de Serviço: Nº ${os.numero} - ${os.nomeOS}`, 14, 46);
-    const dataAtiv = new Date(escala.dataInicio).toLocaleString('pt-BR'); doc.text(`Ativado em: ${dataAtiv}`, 14, 52);
-    const nomeDespachante = escala.despachante ? escala.despachante.nome : 'N/D';
-    doc.setFontSize(10); doc.setTextColor(26, 35, 126); doc.text(`Despachado por: ${nomeDespachante}`, 14, 60);
-    doc.setTextColor(26, 35, 126); doc.setFontSize(14); doc.text("Composição da Guarnição", 14, 75);
-    let dadosEquipe = [];
-    if(escala.equipe) { dadosEquipe = escala.equipe.map(m => [m.funcao, m.posto || '', m.nome || '', m.rg || '', m.tel || '-']); } 
-    else { dadosEquipe = [['Comandante', '', 'Comandante', escala.rgComandante || '-', '-']]; }
-    doc.autoTable({ startY: 80, head: [['Função', 'Posto', 'Nome', 'RG', 'Telefone']], body: dadosEquipe, theme: 'grid', headStyles: { fillColor: [40, 167, 69] } });
-    let finalY = doc.lastAutoTable.finalY + 15;
-    doc.setFontSize(14); doc.setTextColor(26, 35, 126); doc.text("Roteiro Operacional", 14, finalY);
-    const dadosAtividades = os.atividades.map(a => [a.tipo, a.inicio, a.fim, a.local]);
-    doc.autoTable({ startY: finalY + 5, head: [['Atividade', 'Início', 'Fim', 'Local']], body: dadosAtividades, theme: 'striped', headStyles: { fillColor: [26, 35, 126] } });
-    doc.save(`Ativacao_${escala.recursoId || escala.prefixo}.pdf`);
 }

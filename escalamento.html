@@ -28,13 +28,17 @@
         }
 
         .missao-destaque {
-            color: #1a237e; /* Azul igual do prefixo */
+            color: #1a237e;
             font-weight: 800;
             font-size: 1rem;
             text-transform: uppercase;
             display: block;
             margin-bottom: 4px;
         }
+        
+        /* Badge para diferenciar OS de OE no painel */
+        .badge-tipo-os { background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid #bbdefb; margin-right: 5px; }
+        .badge-tipo-oe { background: #ffebee; color: #c62828; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid #ffcdd2; margin-right: 5px; }
 
         .atividade-titulo { font-weight: bold; font-size: 0.9rem; color: #444; }
         .atividade-horario { font-size: 0.8rem; color: #555; background: #f8f9fa; padding: 2px 8px; border-radius: 4px; border: 1px solid #ddd; margin-left: 5px; }
@@ -60,57 +64,56 @@
 </head>
 <body>
 <nav>
-    <div class="logo">
-        ORDENA 
-    </div>
-    
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
-        ☰
-    </button>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
 </nav>
 
 <div id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <span>MENU</span>
-        <button class="close-btn" onclick="toggleSidebar()">✕</button>
-    </div>
-
+    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
     <ul class="sidebar-menu">
         <li><a href="index.html">Início</a></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li><li><a href="especiais.html">● Ordens Especiais</a></li></ul></li>
+        <li><a href="planejamento.html">Planejamento</a></li>
+        <li><a href="escalamento.html">Ativação</a></li>
         
         <li class="has-submenu">
-            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
+            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
             <ul class="submenu">
-                <li><a href="cadastro.html">● Viaturas</a></li>
-                <li><a href="cabines.html">● Cabines</a></li>
-                <li><a href="setores.html">● Setores a Pé</a></li>
+                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
+                <li><a href="historico.html">● Histórico Ativações </a></li>
             </ul>
         </li>
 
-        <li><a href="enderecos.html">Pontos Base/PTR</a></li>
-        <li><a href="os.html">QMD (Missões)</a></li> 
-        <li><a href="escalamento.html">Ativação</a></li>
-        <li><a href="historico.html">Histórico</a></li>
+        <!-- <li><a href="historico.html">Histórico</a></li> -->
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
 </div>
 <script src="menu.js"></script>
-
 <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
     <main>
         <div class="card-container-main">
-            <h2>Ativação de Guarnição</h2>
+            <div style="border-bottom: 2px solid #1a237e; margin-bottom: 20px; padding-bottom: 10px;">
+                <h2 style="margin:0;">Ativação de Guarnição</h2>
+                <div style="margin-top: 5px; font-size: 0.9rem; color: #555;">
+                    Data de Referência: <strong id="dataHojeDisplay" style="color:#d32f2f;">--/--/----</strong>
+                </div>
+            </div>
+
             <form id="escalamentoForm">
                 <div class="grid-escalamento" style="margin-bottom: 20px;">
                     <div>
-                        <label>Recurso Disponível</label>
-                        <select id="selectRecurso" class="input-padrao" required></select>
+                        <label>1. Recurso Físico Disponível</label>
+                        <select id="selectRecurso" class="input-padrao" required onchange="filtrarPlanejamentoPorRecurso()"></select>
                     </div>
                     <div>
-                        <label>Ordem de Serviço (OS)</label>
-                        <select id="selectOS" class="input-padrao" required></select>
+                        <label>2. Planejamento do Dia (OS / OE)</label>
+                        <select id="selectPlanejamento" class="input-padrao" required disabled>
+                            <option value="">Selecione o Recurso primeiro...</option>
+                        </select>
                     </div>
                 </div>
 
@@ -122,17 +125,8 @@
                         <div style="flex: 1;">
                             <label>Posto/Grad</label>
                             <select id="postoCmd" class="input-padrao" required>
-                                <option value="">Selecione...</option>
-                                <option value="SD">SD</option>
-                                <option value="CB">CB</option>
-                                <option value="SGT">SGT</option>
-                                <option value="SUBTEN">SUBTEN</option>
-                                <option value="ASP">ASP</option>
-                                <option value="TEN">TEN</option>
-                                <option value="CAP">CAP</option>
-                                <option value="MAJ">MAJ</option>
-                                <option value="TC">TC</option>
-                                <option value="CEL">CEL</option>
+                                <option value="">...</option>
+                                <option value="SD">SD</option><option value="CB">CB</option><option value="SGT">SGT</option><option value="SUBTEN">SUBTEN</option><option value="ASP">ASP</option><option value="TEN">TEN</option><option value="CAP">CAP</option><option value="MAJ">MAJ</option><option value="TC">TC</option><option value="CEL">CEL</option>
                             </select>
                         </div>
                         <div style="flex: 2;">
@@ -173,11 +167,11 @@
                 <table style="width: 100%;">
                     <thead>
                         <tr>
-                            <th style="width: 18%;">Recurso / OS</th>
-                            <th style="width: 18%;">Equipe</th>
-                            <th style="width: 35%;">Status / Local</th>
-                            <th style="width: 12%; text-align: center;">Tempo</th> 
-                            <th style="width: 17%; text-align: center;">Ações</th>
+                            <th style="width: 25%;">Recurso / Planejamento</th>
+                            <th style="width: 20%;">Equipe</th>
+                            <th style="width: 30%;">Status / Local</th>
+                            <th style="width: 10%; text-align: center;">Tempo</th> 
+                            <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="listaMonitoramento"></tbody>
