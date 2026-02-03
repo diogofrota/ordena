@@ -24,6 +24,7 @@ function atualizarMapaTatico() {
     
     const todosLocais = [
         ...(JSON.parse(localStorage.getItem('locaisCadastrados')) || []),
+        ...(JSON.parse(localStorage.getItem('pontosPatrulhamento')) || []),
         ...(JSON.parse(localStorage.getItem('cabines')) || []),
         ...(JSON.parse(localStorage.getItem('setores')) || [])
     ];
@@ -68,7 +69,9 @@ function atualizarMapaTatico() {
             else if (tipoAtiv.includes('preleção') || tipoAtiv.includes('prelecao')) stats.prelecao++;
             else if (tipoAtiv.includes('retorno')) stats.retorno++;
 
-            if (atividadeAtual.local) {
+            if (atividadeAtual.gps && atividadeAtual.gps.lat) {
+                adicionarPinoNoMapa(escala, { lat: atividadeAtual.gps.lat, lng: atividadeAtual.gps.lng }, atividadeAtual, tipoRecurso);
+            } else if (atividadeAtual.local) {
                 const localEncontrado = encontrarCoordenadas(atividadeAtual.local, todosLocais);
                 if (localEncontrado) {
                     adicionarPinoNoMapa(escala, localEncontrado, atividadeAtual, tipoRecurso);

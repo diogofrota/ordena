@@ -33,7 +33,7 @@ function carregarHistorico() {
         const duracao = `${diffHrs}h ${diffMins}min`;
 
         const cmd = item.equipe[0];
-        const cmdTexto = `<strong>${cmd.posto} ${cmd.nome}</strong><br><small>RG: ${cmd.rg}</small>`;
+        const cmdTexto = `${cmd.posto} ${cmd.nome}`;
         const equipeQtd = item.equipe.length;
 
         const recursoId = item.recursoId || '-';
@@ -44,26 +44,17 @@ function carregarHistorico() {
         // RESPONSIVO: data-label adicionado
         tbody.innerHTML += `
             <tr>
-                <td data-label="Data / Período">
-                    <strong>${dataFormatada}</strong><br>
-                    <small>${horaIni} às ${horaFim}</small>
-                </td>
-                <td data-label="OS / Viatura">
-                    <span style="color:#1a237e; font-weight:bold;">OS ${item.osNumero}</span><br>
-                    Recurso: ${tipoRecurso} ${recursoId}<br>
-                    <small>${missao}</small>
-                </td>
-                <td data-label="Comando da Equipe">
-                    ${cmdTexto}<br>
-                    ${equipeQtd > 1 ? `<small style="color:#28a745">+ ${equipeQtd - 1} Auxiliares</small>` : ''}
-                </td>
-                <td data-label="Duração">
-                    <span style="font-weight:600; color:#333;">${duracao}</span>
-                </td>
-                <td data-label="Ações" style="text-align: center;">
-                    <div style="display:flex; justify-content:flex-end;">
-                        <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 5px 10px; font-size: 0.8rem;">📄 Relatório</button>
-                    </div>
+                <td data-label="Data"><strong>${dataFormatada}</strong></td>
+                <td data-label="Início">${horaIni}</td>
+                <td data-label="Fim">${horaFim}</td>
+                <td data-label="OS"><span style="color:#1a237e; font-weight:bold;">${item.osNumero}</span></td>
+                <td data-label="Missão">${missao}</td>
+                <td data-label="Recurso">${tipoRecurso} ${recursoId}</td>
+                <td data-label="Comandante">${cmdTexto}<br><small>RG: ${cmd.rg}</small></td>
+                <td data-label="Auxiliares">${equipeQtd > 1 ? `+ ${equipeQtd - 1}` : '0'}</td>
+                <td data-label="Duração"><span style="font-weight:600; color:#333;">${duracao}</span></td>
+                <td data-label="Ações" style="text-align:center;">
+                    <button onclick="reimprimirPDF(${index})" class="btn-info" style="padding: 6px 12px; font-size: 0.85rem;">📄 Relatório</button>
                 </td>
             </tr>
         `;

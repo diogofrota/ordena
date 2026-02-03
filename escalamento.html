@@ -50,6 +50,22 @@
         .btn-check-gps:hover { background-color: #1a237e; color: white; }
 
         table td { vertical-align: middle; padding: 12px 10px; }
+
+        @media (max-width: 768px) {
+            .grid-escalamento { grid-template-columns: 1fr !important; }
+            .row-integrante { flex-direction: column; }
+            .box-integrante { flex-direction: column; align-items: stretch; }
+            .container-full-width { padding: 15px; }
+            .acoes-inline { display: flex; gap: 8px; justify-content: flex-end; }
+            .acoes-inline button {
+                width: auto !important;
+                min-height: 42px !important;
+                height: 42px !important;
+                font-size: 0.9rem !important;
+                padding: 0 12px !important;
+                margin-bottom: 0 !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -146,13 +162,17 @@
             </div>
             
             <div class="table-responsive">
-                <table style="width: 100%;">
+                <table class="tabela-monitoramento" style="width: 100%;">
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Recurso / OS</th>
-                            <th style="width: 20%;">Equipe</th>
-                            <th style="width: 40%;">Status / Local</th>
-                            <th style="width: 15%; text-align: center;">Ações</th>
+                            <th>Recurso</th>
+                            <th>Início</th>
+                            <th>Comandante</th>
+                            <th>Auxiliares</th>
+                            <th>OS</th>
+                            <th>Missão</th>
+                            <th>Turno</th>
+                            <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="listaMonitoramento"></tbody>

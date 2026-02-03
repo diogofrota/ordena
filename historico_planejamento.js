@@ -130,12 +130,12 @@ function verDetalhesDia(dataISO, cardElement) {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="col-seq">${index + 1}</td>
-            <td class="col-recurso">
+            <td class="col-seq" data-label="#">${index + 1}</td>
+            <td class="col-recurso" data-label="Recurso">
                 ${icone} <span>${item.recurso}</span>
             </td>
             
-            <td>
+            <td data-label="OS (Rotina)">
                 <div class="cell-info">
                     <span class="info-titulo">OS ${item.osNum}</span>
                     <span class="info-sub">${item.missaoOS || ''}</span>
@@ -143,12 +143,12 @@ function verDetalhesDia(dataISO, cardElement) {
                 </div>
             </td>
             
-            <td>${oeContent}</td>
+            <td data-label="OE">${oeContent}</td>
             
-            <td class="col-sub">${item.textoSub || '-'}</td>
-            <td style="font-size:0.9rem; color:#555;">${item.obs || ''}</td>
+            <td class="col-sub" data-label="Sub-Ordem">${item.textoSub || '-'}</td>
+            <td data-label="Obs" style="font-size:0.9rem; color:#555;">${item.obs || ''}</td>
             
-            <td style="text-align:center;">
+            <td data-label="Ações" style="text-align:center;">
                 <button class="btn-print" onclick="imprimirItemIndividual('${item.id}')" title="Reimprimir Cartão">🖨️</button>
             </td>
         `;

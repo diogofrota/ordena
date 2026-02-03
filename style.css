@@ -106,7 +106,21 @@ nav {
 .overlay.active { display: block; }
 
 @media (max-width: 480px) {
+    nav {
+        height: auto;
+        padding: 10px 12px;
+        align-items: center;
+    }
+    .logo {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+        margin-right: 8px;
+        flex: 1;
+    }
     .logo-desc { display: none; }
+    .menu-toggle { font-size: 26px; width: 34px; }
     .sidebar { width: 85%; right: -85%; }
 }
 
@@ -183,6 +197,10 @@ tr:hover { background-color: #f1f1f1; }
     .grid-escalamento { grid-template-columns: 1fr !important; }
     h1 { font-size: 1.5rem; }
     h2 { font-size: 1.3rem; }
+    nav { height: auto; padding: 10px 12px; }
+    .logo { font-size: 1.05rem; white-space: nowrap; overflow: visible; text-overflow: clip; }
+    .menu-toggle { display: flex; align-items: center; justify-content: center; }
+    .card-container-main { padding: 20px; }
 
     /* BOTÃO ROBUSTO PARA CELULAR */
     button, .btn-primary, .btn-secondary, .btn-info, .btn-danger, .btn-success, .btn-warning {
@@ -229,10 +247,20 @@ tr:hover { background-color: #f1f1f1; }
         content: attr(data-label);
         position: absolute;
         left: 10px;
-        width: 40%;
+        width: 42%;
         white-space: nowrap;
         font-weight: 700;
         color: var(--primary-color);
         text-align: left;
+    }
+
+    /* Tabela do painel tático (evita sobreposição de label) */
+    .tabela-monitoramento td {
+        padding-left: 55%;
+        justify-content: flex-end;
+        text-align: right;
+    }
+    .tabela-monitoramento td:before {
+        width: 50%;
     }
 }

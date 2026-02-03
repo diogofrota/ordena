@@ -362,10 +362,10 @@ function renderizarTabela() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="col-seq">${index + 1}</td>
-            <td class="col-recurso">${icone}<br><span style="font-size:0.75rem;">${item.recurso}</span></td>
+            <td class="col-seq" data-label="#">${index + 1}</td>
+            <td class="col-recurso" data-label="Recurso">${icone}<br><span style="font-size:0.75rem;">${item.recurso}</span></td>
             
-            <td>
+            <td data-label="OS (Rotina)">
                 <div class="cell-info">
                     <span class="info-titulo">OS ${item.osNum}</span>
                     <span class="info-sub">${item.missaoOS}</span>
@@ -373,11 +373,11 @@ function renderizarTabela() {
                 </div>
             </td>
             
-            <td>${oeContent}</td>
+            <td data-label="OE">${oeContent}</td>
             
-            <td class="col-sub">${item.textoSub}</td>
-            <td class="col-obs">${item.obs || ''}</td>
-            <td style="text-align:center;">
+            <td class="col-sub" data-label="Sub-Ordem">${item.textoSub}</td>
+            <td class="col-obs" data-label="Obs">${item.obs || ''}</td>
+            <td data-label="Ações" style="text-align:center;">
                 <button class="btn-icon btn-print" onclick="imprimirItem(${item.id})">🖨️</button>
                 <button class="btn-icon btn-del" onclick="removerItem(${item.id})">X</button>
             </td>

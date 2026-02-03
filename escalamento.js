@@ -223,31 +223,18 @@ function exibirMonitoramento() {
         let totalIntegrantes = escala.equipe ? escala.equipe.length : 1;
         
         const osResumo = escala.osResumo || {};
-        const statusHTML = `
-            <div class="missao-destaque">MISSÃO: ${osResumo.nomeOS || 'OS ' + escala.osNumero}</div>
-            <div style="font-size:0.85rem;">
-                <span class="badge-tipo-os">OS</span> Nº ${escala.osNumero}
-            </div>
-            <div style="font-size:0.8rem; color:#777;">
-                ${osResumo.inicioGeral || ''} às ${osResumo.terminoGeral || ''}
-            </div>
-        `;
 
         corpoTabela.innerHTML += `
             <tr>
-                <td>
-                    <strong style="color:#1a237e; font-size:1.1rem;">${escala.tipoRecurso}: ${escala.recursoId}</strong><br>
-                    <small style="color:#555;">Início: ${new Date(escala.dataInicio).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small>
-                </td>
-                <td>
-                    <strong>${cmd.posto} ${cmd.nome}</strong><br>
-                    <small>+ ${totalIntegrantes - 1} Auxiliares</small>
-                </td>
-                <td>
-                    ${statusHTML}
-                </td>
-                <td style="text-align: right; white-space: nowrap;">
-                    <div style="display:flex; justify-content: flex-end; gap:5px;">
+                <td data-label="Recurso"><strong>${escala.tipoRecurso} ${escala.recursoId}</strong></td>
+                <td data-label="Início">${new Date(escala.dataInicio).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</td>
+                <td data-label="Comandante">${cmd.posto} ${cmd.nome}</td>
+                <td data-label="Auxiliares">${totalIntegrantes - 1}</td>
+                <td data-label="OS"><span class="badge-tipo-os">OS</span> Nº ${escala.osNumero}</td>
+                <td data-label="Missão">${osResumo.nomeOS || '-'}</td>
+                <td data-label="Turno">${osResumo.inicioGeral || '-'} às ${osResumo.terminoGeral || '-'}</td>
+                <td data-label="Ações" style="text-align: center;">
+                    <div class="acoes-inline">
                         <button onclick="imprimirAtivacao(${escala.id})" class="btn-info" title="Imprimir PDF">PDF</button>
                         <button onclick="verificarCheckGPS('${escala.id}')" class="btn-check-gps" title="Validar Posição">GPS</button>
                         <button onclick="finalizarTurno(${escala.id}, false)" class="btn-danger">Baixa</button>
