@@ -4,7 +4,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    migrarEscalasAntigas(); 
     popularRecursosFisicos(); 
     exibirMonitoramento();
     
@@ -19,19 +18,6 @@ const DESPACHANTE = {
     funcao: "Operador de Despacho",
     id: "user_01"
 };
-
-// --- MIGRAÇÃO LEGADO ---
-function migrarEscalasAntigas() {
-    let escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
-    let houveMudanca = false;
-    escalas.forEach(e => {
-        if (!e.planejamentoId && e.osNumero) { 
-            e.tipoEscala = "LEGADO"; 
-            houveMudanca = true; 
-        }
-    });
-    if (houveMudanca) { localStorage.setItem('escalasAtivas', JSON.stringify(escalas)); }
-}
 
 // --- 1. POPULA OS RECURSOS FÍSICOS (VISUAL: CARRO/MOTO | LÓGICA: VIATURA/MOTO) ---
 function popularRecursosFisicos() {
@@ -111,53 +97,50 @@ function popularRecursosFisicos() {
     }
 }
 
-// --- 2. FILTRA O PLANEJAMENTO ---
-function filtrarPlanejamentoPorRecurso() {
+// --- 2. FILTRA OS POR RECURSO ---
+function filtrarOSPorRecurso() {
     const selectRecurso = document.getElementById('selectRecurso');
-    const selectPlan = document.getElementById('selectPlanejamento');
-    
-    selectPlan.innerHTML = '<option value="">Selecione...</option>';
-    selectPlan.disabled = true;
+    const selectOS = document.getElementById('selectOS');
+
+    selectOS.innerHTML = '<option value="">Selecione...</option>';
+    selectOS.disabled = true;
 
     if (!selectRecurso.value) return;
 
-    // Pega o tipo lógico (Viatura/Moto) que definimos acima
     const tipoRecursoFisico = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo;
-    const planejamento = JSON.parse(localStorage.getItem('planejamentoDiario')) || [];
-    
-    const hoje = new Date();
-    const y = hoje.getFullYear();
-    const m = String(hoje.getMonth() + 1).padStart(2, '0');
-    const d = String(hoje.getDate()).padStart(2, '0');
-    const dataHojeISO = `${y}-${m}-${d}`;
+    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const ativas = ordens.filter(o => o.status === 'Ativa');
 
-    const planosCompativeis = planejamento.filter(p => 
-        p.data === dataHojeISO && p.recurso === tipoRecursoFisico
-    );
+    const compativeis = ativas.filter(o => normalizarTipoOS(o.tipoRecurso) === tipoRecursoFisico);
 
-    if (planosCompativeis.length === 0) {
+    if (compativeis.length === 0) {
         const opt = document.createElement('option');
-        opt.innerText = `Sem planejamento de ${tipoRecursoFisico} para hoje.`;
-        selectPlan.appendChild(opt);
+        opt.innerText = `Sem OS de ${tipoRecursoFisico} disponíveis.`;
+        selectOS.appendChild(opt);
     } else {
-        selectPlan.disabled = false;
-        selectPlan.innerHTML = '<option value="">Selecione o Planejamento...</option>';
-        
-        planosCompativeis.forEach(plan => {
-            const opt = document.createElement('option');
-            opt.value = plan.id; 
-            
-            // Visualização: OS {Num} - {Missão} [-> {Evento}]
-            let texto = `OS ${plan.osNum} | ${plan.missaoOS}`;
-            
-            if (plan.oeId) {
-                texto = `OS ${plan.osNum} ➔ [OE] ${plan.nomeOE}: ${plan.textoSub}`;
-            }
-            
-            opt.innerHTML = texto;
-            selectPlan.appendChild(opt);
-        });
+        selectOS.disabled = false;
+        selectOS.innerHTML = '<option value="">Selecione a OS...</option>';
+
+        compativeis
+            .sort((a, b) => b.numero - a.numero)
+            .forEach(os => {
+                const opt = document.createElement('option');
+                opt.value = os.numero;
+                const op = (os.atividades || []).find(a => a.operacao)?.operacao;
+                const textoOp = op ? ` | OP: ${op}` : '';
+                opt.innerText = `OS ${os.numero} | ${os.nomeOS} | ${os.tipoRecurso} | ${os.inicioGeral}-${os.terminoGeral} | ${os.tipoOrdem}${textoOp}`;
+                selectOS.appendChild(opt);
+            });
     }
+}
+
+function normalizarTipoOS(tipo) {
+    if (!tipo) return '';
+    const t = tipo.toLowerCase();
+    if (t.includes('moto')) return 'Moto';
+    if (t.includes('cabine')) return 'Cabine';
+    if (t.includes('setor')) return 'Setor';
+    return 'Viatura';
 }
 
 // --- INTEGRANTES ---
@@ -182,14 +165,12 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
     const textoOption = selectRecurso.options[selectRecurso.selectedIndex].text;
     const tipoRecursoReal = textoOption.match(/\[(.*?)\]/)[1] || tipoRecursoLogico;
 
-    const planId = document.getElementById('selectPlanejamento').value; 
-    
-    if (!planId) return alert("Selecione um item do planejamento.");
+    const osNumero = document.getElementById('selectOS').value; 
+    if (!osNumero) return alert("Selecione a OS.");
 
-    const planejamento = JSON.parse(localStorage.getItem('planejamentoDiario')) || [];
-    const itemPlanejado = planejamento.find(p => p.id == planId);
-
-    if(!itemPlanejado) return alert("Erro: Planejamento não encontrado.");
+    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const os = ordens.find(o => o.numero.toString() === osNumero.toString());
+    if (!os) return alert("Erro: OS não encontrada.");
 
     const comandante = { posto: document.getElementById('postoCmd').value, nome: document.getElementById('nomeCmd').value, rg: document.getElementById('rgCmd').value, tel: document.getElementById('telCmd').value, funcao: "Comandante" }; 
     const integrantesExtras = []; document.querySelectorAll('#listaIntegrantes .box-integrante').forEach(box => { integrantesExtras.push({ posto: box.querySelector('select[name="posto"]').value, nome: box.querySelector('input[name="nome"]').value, rg: box.querySelector('input[name="rg"]').value, funcao: "Auxiliar" }); }); 
@@ -199,10 +180,15 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
         dataInicio: new Date().toISOString(), 
         recursoId: recursoId, 
         tipoRecurso: tipoRecursoReal, // Salva "Carro" ou "Moto" para exibição
-        planejamentoId: planId,
-        osNumero: itemPlanejado.osNum,
-        missaoOS: itemPlanejado.missaoOS,
-        oeInfo: (itemPlanejado.oeId) ? { nome: itemPlanejado.nomeOE, sub: itemPlanejado.textoSub } : null,
+        osNumero: os.numero,
+        osResumo: {
+            numero: os.numero,
+            nomeOS: os.nomeOS,
+            tipoRecurso: os.tipoRecurso,
+            inicioGeral: os.inicioGeral,
+            terminoGeral: os.terminoGeral,
+            tipoOrdem: os.tipoOrdem
+        },
         despachante: DESPACHANTE, 
         equipe: [comandante, ...integrantesExtras] 
     }; 
@@ -233,30 +219,19 @@ function exibirMonitoramento() {
     }
 
     escalas.forEach((escala, index) => {
-        let textoTempo = "Em andamento";
-        let classeTempo = "timer-box";
-        
         let cmd = escala.equipe ? escala.equipe[0] : { posto: '', nome: 'Comandante' };
         let totalIntegrantes = escala.equipe ? escala.equipe.length : 1;
         
-        let statusHTML = "";
-        
-        if (escala.oeInfo) {
-            statusHTML = `
-                <div class="missao-destaque" style="color:#d32f2f;">EVENTO: ${escala.oeInfo.nome}</div>
-                <div style="font-size:0.85rem; color:#555;">
-                    <span class="badge-tipo-oe">OE</span> ${escala.oeInfo.sub}
-                </div>
-                <div style="font-size:0.8rem; margin-top:3px; color:#777;">Base: OS ${escala.osNumero}</div>
-            `;
-        } else {
-            statusHTML = `
-                <div class="missao-destaque">ROTINA: ${escala.missaoOS || 'OS ' + escala.osNumero}</div>
-                <div style="font-size:0.85rem;">
-                    <span class="badge-tipo-os">OS</span> Nº ${escala.osNumero}
-                </div>
-            `;
-        }
+        const osResumo = escala.osResumo || {};
+        const statusHTML = `
+            <div class="missao-destaque">MISSÃO: ${osResumo.nomeOS || 'OS ' + escala.osNumero}</div>
+            <div style="font-size:0.85rem;">
+                <span class="badge-tipo-os">OS</span> Nº ${escala.osNumero}
+            </div>
+            <div style="font-size:0.8rem; color:#777;">
+                ${osResumo.inicioGeral || ''} às ${osResumo.terminoGeral || ''}
+            </div>
+        `;
 
         corpoTabela.innerHTML += `
             <tr>
@@ -271,11 +246,9 @@ function exibirMonitoramento() {
                 <td>
                     ${statusHTML}
                 </td>
-                <td style="text-align:center;">
-                    <span class="${classeTempo}">${textoTempo}</span>
-                </td>
                 <td style="text-align: right; white-space: nowrap;">
                     <div style="display:flex; justify-content: flex-end; gap:5px;">
+                        <button onclick="imprimirAtivacao(${escala.id})" class="btn-info" title="Imprimir PDF">PDF</button>
                         <button onclick="verificarCheckGPS('${escala.id}')" class="btn-check-gps" title="Validar Posição">GPS</button>
                         <button onclick="finalizarTurno(${escala.id}, false)" class="btn-danger">Baixa</button>
                     </div>
@@ -287,6 +260,23 @@ function exibirMonitoramento() {
 
 function verificarCheckGPS(escalaId) {
     alert("API GPS: Posição Validada com Sucesso.");
+}
+
+function imprimirAtivacao(id) {
+    const ativas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
+    const historico = JSON.parse(localStorage.getItem('historicoEscalas')) || [];
+    const escala = ativas.find(e => e.id === id) || historico.find(e => e.id === id);
+    if (!escala) return alert("Ativação não encontrada.");
+
+    const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const os = ordens.find(o => o.numero == escala.osNumero);
+
+    const payload = {
+        escala,
+        os
+    };
+    localStorage.setItem('ativacaoImpressaoTemp', JSON.stringify(payload));
+    window.open('impressao_ativacao.html', '_blank');
 }
 
 function finalizarTurno(id, automatico = false) {

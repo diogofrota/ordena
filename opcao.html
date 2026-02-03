@@ -228,27 +228,10 @@
             </div>
 
         </div>
-
-        <div style="text-align:center; margin-top: 30px;">
-            <button id="btnClearStorage" class="btn-secondary" style="opacity: 0.6; font-size: 0.85rem;">
-                Limpar dados locais
-            </button>
-        </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const btnClear = document.getElementById('btnClearStorage');
-            if (btnClear) {
-                btnClear.addEventListener('click', () => {
-                    if (confirm('Isso vai apagar todos os dados salvos neste navegador. Deseja continuar?')) {
-                        localStorage.clear();
-                        alert('Dados locais removidos com sucesso.');
-                        location.reload();
-                    }
-                });
-            }
-
             // 1. Carrega todos os dados
             const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
             const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];

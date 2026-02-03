@@ -13,7 +13,6 @@ const btnCancelar = document.getElementById('btnCancelar');
 const inputRaio = document.getElementById('raioAtuacao');
 
 document.addEventListener('DOMContentLoaded', () => {
-    migrarDadosAntigos();
     iniciarMapaCadastro();
     exibirPontos();
     gerarProximoCodigo();
@@ -45,13 +44,6 @@ function gerarProximoCodigo() {
     const numeros = pontos.map(p => parseInt(p.codigo)).filter(n => !isNaN(n));
     const proximo = numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
     document.getElementById('codigoFinal').value = proximo;
-}
-
-// --- MIGRAÇÃO ---
-function migrarDadosAntigos() {
-    if (!localStorage.getItem('pontosPatrulhamento')) {
-        localStorage.setItem('pontosPatrulhamento', JSON.stringify([]));
-    }
 }
 
 // --- MAPA DE CADASTRO (PRINCIPAL) ---

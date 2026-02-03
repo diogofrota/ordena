@@ -6,8 +6,6 @@
     <title>ORDENA - Ativação</title>
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         /* Layout Geral */
         .grid-escalamento { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -51,14 +49,6 @@
         }
         .btn-check-gps:hover { background-color: #1a237e; color: white; }
 
-        .timer-box {
-            font-family: monospace; font-size: 1.2rem; font-weight: bold; color: #333;
-            background: #e9ecef; padding: 8px 12px; border-radius: 4px; display: inline-block;
-        }
-        .timer-warning { color: #856404; background: #fff3cd; }
-        .timer-danger { color: #721c24; background: #f8d7da; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-
         table td { vertical-align: middle; padding: 12px 10px; }
     </style>
 </head>
@@ -74,19 +64,11 @@
         <li><a href="index.html">Início</a></li>
         <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
         <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
-        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li><li><a href="especiais.html">● Ordens Especiais</a></li></ul></li>
-        <li><a href="planejamento.html">Planejamento</a></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li></ul></li>
         <li><a href="escalamento.html">Ativação</a></li>
-        
-        <li class="has-submenu">
-            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Histórico ▾</a>
-            <ul class="submenu">
-                <li><a href="historico_planejamento.html">● Histórico Planejamento</a></li>
-                <li><a href="historico.html">● Histórico Ativações </a></li>
-            </ul>
-        </li>
+        <li><a href="historico.html">Histórico de Ativações</a></li>
 
-        <!-- <li><a href="historico.html">Histórico</a></li> -->
+        <!-- <li><a href="historico.html">Histórico de Ativações</a></li> -->
         <li><a href="mapa_tatico.html">Mapa Tático</a></li>
         <li><a href="dashboard.html">Dashboard</a></li>
     </ul>
@@ -107,11 +89,11 @@
                 <div class="grid-escalamento" style="margin-bottom: 20px;">
                     <div>
                         <label>1. Recurso Físico Disponível</label>
-                        <select id="selectRecurso" class="input-padrao" required onchange="filtrarPlanejamentoPorRecurso()"></select>
+                        <select id="selectRecurso" class="input-padrao" required onchange="filtrarOSPorRecurso()"></select>
                     </div>
                     <div>
-                        <label>2. Planejamento do Dia (OS / OE)</label>
-                        <select id="selectPlanejamento" class="input-padrao" required disabled>
+                        <label>2. Ordem de Serviço (OS)</label>
+                        <select id="selectOS" class="input-padrao" required disabled>
                             <option value="">Selecione o Recurso primeiro...</option>
                         </select>
                     </div>
@@ -167,10 +149,9 @@
                 <table style="width: 100%;">
                     <thead>
                         <tr>
-                            <th style="width: 25%;">Recurso / Planejamento</th>
+                            <th style="width: 25%;">Recurso / OS</th>
                             <th style="width: 20%;">Equipe</th>
-                            <th style="width: 30%;">Status / Local</th>
-                            <th style="width: 10%; text-align: center;">Tempo</th> 
+                            <th style="width: 40%;">Status / Local</th>
                             <th style="width: 15%; text-align: center;">Ações</th>
                         </tr>
                     </thead>

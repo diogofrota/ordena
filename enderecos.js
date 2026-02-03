@@ -12,7 +12,6 @@ const btnSalvar = document.getElementById('btnSalvar');
 const btnCancelar = document.getElementById('btnCancelar');
 
 document.addEventListener('DOMContentLoaded', () => {
-    migrarLocaisAntigos();
     iniciarMapaCadastro();
     exibirLocais();
     gerarProximoCodigo();
@@ -24,16 +23,6 @@ function gerarProximoCodigo() {
     const numeros = locais.map(l => parseInt(l.codigo)).filter(n => !isNaN(n));
     const proximo = numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
     document.getElementById('codigoFinal').value = proximo;
-}
-
-// --- MIGRAÇÃO ---
-function migrarLocaisAntigos() {
-    let locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
-    let houveMudanca = false;
-    locais.forEach(l => {
-        if (!l.status) { l.status = 'Ativo'; houveMudanca = true; }
-    });
-    if (houveMudanca) localStorage.setItem('locaisCadastrados', JSON.stringify(locais));
 }
 
 // --- MAPA ---

@@ -1,5 +1,6 @@
 /**
- * LÓGICA DE GERENCIAMENTO DE OS (CORRIGIDO: LABELS E COLUNAS)
+ * LÓGICA DE GERENCIAMENTO DE OS
+ * Ajustes: Ordenação Inteligente de Horário (Turno) + Operação na coluna Detalhes
  */
 
 let listaAtividadesTemporaria = [];
@@ -8,8 +9,8 @@ let statusFiltroAtual = 'Ativa';
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        migrarDadosAntigos(); 
         carregarOS();
+        carregarListaOperacoes(); 
         prepararNovoCadastro();
         atualizarInterfaceAtividade();
     } catch (e) {
@@ -17,455 +18,450 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- GERENCIAMENTO DE OPERAÇÕES ---
+function carregarListaOperacoes() {
+    const cadastros = JSON.parse(localStorage.getItem('cadastrosOperacoes')) || [];
+    const nomesSimples = cadastros.map(op => op.nome);
+    const listaCompleta = [...new Set(nomesSimples)].sort();
+
+    const datalist = document.getElementById('listaOperacoes');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    listaCompleta.forEach(nome => {
+        const opt = document.createElement('option');
+        opt.value = nome;
+        datalist.appendChild(opt);
+    });
+}
+
+function abrirModalOperacao() {
+    const textoAtual = document.getElementById('nomeOperacao').value;
+    document.getElementById('modalOpNome').value = textoAtual;
+    document.getElementById('modalOpDesc').value = "";
+    document.getElementById('modalOpInicio').value = "";
+    document.getElementById('modalOpFim').value = "";
+    document.getElementById('modalOperacao').style.display = 'flex';
+}
+
+function fecharModalOperacao() {
+    document.getElementById('modalOperacao').style.display = 'none';
+}
+
+function salvarOperacaoDetalhada() {
+    const nome = document.getElementById('modalOpNome').value.toUpperCase().trim();
+    const desc = document.getElementById('modalOpDesc').value;
+    const inicio = document.getElementById('modalOpInicio').value;
+    const fim = document.getElementById('modalOpFim').value;
+
+    if (!nome) return alert("O Nome da Operação é obrigatório.");
+
+    let cadastros = JSON.parse(localStorage.getItem('cadastrosOperacoes')) || [];
+    const existe = cadastros.find(op => op.nome === nome);
+    if (existe) { alert("Já existe uma operação com este nome."); return; }
+
+    const novaOp = { id: Date.now(), nome, descricao: desc, inicio, fim, criadoEm: new Date().toISOString() };
+    cadastros.push(novaOp);
+    localStorage.setItem('cadastrosOperacoes', JSON.stringify(cadastros));
+    
+    carregarListaOperacoes();
+    document.getElementById('nomeOperacao').value = nome;
+    fecharModalOperacao();
+    alert("Operação cadastrada!");
+}
+
 // --- INTERFACE ---
 function atualizarInterfaceAtividade() {
-    try {
-        const tipo = document.getElementById('tipoAtividade').value;
-        const linhaLocal = document.getElementById('linhaLocalizacao');
-        const campoLocal = document.getElementById('localAtividade');
-        const labelLocal = document.getElementById('labelLocal');
-
-        if (!linhaLocal || !campoLocal) return;
-
-        if (tipo === 'Baseamento' || tipo === 'Patrulhamento') {
-            linhaLocal.style.display = 'flex';
-            
-            if (tipo === 'Baseamento') {
-                labelLocal.innerText = "Selecione o Ponto de Baseamento";
-                campoLocal.placeholder = "Busque pelo nome do local...";
-            } else {
-                labelLocal.innerText = "Selecione a Área de Patrulhamento";
-                campoLocal.placeholder = "Busque pelo nome da área...";
-            }
-            
-            carregarSugestoesLocais();
-        } else {
-            linhaLocal.style.display = 'none';
-            campoLocal.value = "";
-        }
-    } catch (e) { console.error("Erro interface:", e); }
-}
-
-// --- CARREGA SUGESTÕES ---
-function carregarSugestoesLocais() {
-    const datalist = document.getElementById('listaLocaisSugestao');
-    const tipoSelecionado = document.getElementById('tipoAtividade').value;
-    if(!datalist) return;
-
-    datalist.innerHTML = ''; 
-    
-    let locaisBase = [];
-    let pontosPatrulha = [];
-    try {
-        locaisBase = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
-        pontosPatrulha = JSON.parse(localStorage.getItem('pontosPatrulhamento')) || [];
-    } catch(e) { console.error("Erro localStorage:", e); }
-
-    if (!Array.isArray(locaisBase)) locaisBase = [];
-    if (!Array.isArray(pontosPatrulha)) pontosPatrulha = [];
-
-    let locaisParaMostrar = [];
-
-    if (tipoSelecionado === 'Baseamento') {
-        locaisParaMostrar = locaisBase
-            .filter(l => l && l.status === 'Ativo')
-            .map(l => ({
-                valor: `[Base] ${l.apelido}`, 
-                texto: `${l.apelido} - ${l.rua}`,
-            }));
-
-    } else if (tipoSelecionado === 'Patrulhamento') {
-        locaisParaMostrar = pontosPatrulha
-            .filter(p => p && p.status === 'Ativo')
-            .map(p => ({
-                valor: `[Patrulha] ${p.apelido}`,
-                texto: `${p.apelido} (Raio: ${p.raio}m)`,
-            }));
-    }
-
-    locaisParaMostrar.sort((a, b) => a.valor.localeCompare(b.valor));
-    
-    locaisParaMostrar.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.valor; 
-        option.label = item.texto; 
-        datalist.appendChild(option);
-    });
-}
-
-// --- CÁLCULOS TEMPO ---
-function calcularTerminoAutomatico() {
-    const duracao = parseInt(document.getElementById('turnoDuracao').value);
-    const inicio = document.getElementById('inicioGeral').value;
-    const campoTermino = document.getElementById('terminoGeral');
-
-    if (duracao === 0 || !inicio) {
-        campoTermino.readOnly = false;
-        return;
-    }
-
-    const [hora, minuto] = inicio.split(':').map(Number);
-    let novaHora = hora + duracao;
-    if (novaHora >= 24) { novaHora = novaHora - 24; }
-
-    const novaHoraString = novaHora.toString().padStart(2, '0');
-    const minutoString = minuto.toString().padStart(2, '0');
-    campoTermino.value = `${novaHoraString}:${minutoString}`;
-}
-
-function calcularMinutosParaOrdenacao(horaAtividade, inicioTurno) {
-    if (!horaAtividade || !inicioTurno) return 0;
-    const [hAtiv, mAtiv] = horaAtividade.split(':').map(Number);
-    const [hTurno, mTurno] = inicioTurno.split(':').map(Number);
-    let minutosAtiv = hAtiv * 60 + mAtiv;
-    let minutosTurno = hTurno * 60 + mTurno;
-    if (minutosAtiv < minutosTurno) minutosAtiv += 1440; 
-    return minutosAtiv;
-}
-
-function validarHorarioDentroDoTurno(horaInicioAtiv, horaFimAtiv) {
-    const turnoInicio = document.getElementById('inicioGeral').value;
-    const turnoFim = document.getElementById('terminoGeral').value;
-    if (!turnoInicio || !turnoFim) return true;
-    const getMinutos = (h) => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; };
-    const tIni = getMinutos(turnoInicio);
-    const tFim = getMinutos(turnoFim);
-    const aIni = getMinutos(horaInicioAtiv);
-    const aFim = getMinutos(horaFimAtiv);
-    const turnoCruzaMeiaNoite = tFim < tIni;
-    const estaDentro = (tempo, inicio, fim, cruza) => {
-        if (cruza) return tempo >= inicio || tempo <= fim;
-        else return tempo >= inicio && tempo <= fim;
-    };
-    if (!estaDentro(aIni, tIni, tFim, turnoCruzaMeiaNoite)) return false;
-    if (!estaDentro(aFim, tIni, tFim, turnoCruzaMeiaNoite)) return false;
-    return true;
-}
-
-// --- ADICIONAR ATIVIDADE ---
-function adicionarFracao() {
     const tipo = document.getElementById('tipoAtividade').value;
-    const inicio = document.getElementById('inicioFracao').value;
-    const fim = document.getElementById('terminoFracao').value;
-    const localInputValue = document.getElementById('localAtividade').value;
-    const inicioGeralOS = document.getElementById('inicioGeral').value; 
+    const linhaLocal = document.getElementById('linhaLocalizacao');
+    const campoLocal = document.getElementById('localAtividade');
+    const labelLocal = document.getElementById('labelLocal');
 
-    if (!inicio || !fim) { alert("Preencha os horários."); return; }
-    if (!validarHorarioDentroDoTurno(inicio, fim)) {
-        alert(`ERRO: O horário (${inicio} - ${fim}) está FORA dos limites do turno!`);
-        return;
-    }
+    if (!linhaLocal || !campoLocal) return;
 
-    if ((tipo === 'Baseamento' || tipo === 'Patrulhamento') && !localInputValue) {
-        alert("Selecione o local/área cadastrada.");
-        return;
-    }
-
-    let icone = "📝";
-    if (tipo === 'Baseamento') icone = "🛡️";
-    else if (tipo === 'Patrulhamento') icone = "🚔";
-    else if (tipo === 'Deslocamento') icone = "🚚";
-    else if (tipo === 'Intervalo') icone = "🍽️";
-
-    let infoRaio = "-";
-    let bairro = "-";
-    let cidade = "-";
-    let logradouro = "-"; 
-    let nomeLocalLimpo = localInputValue;
-    let coordenadas = null; 
-
-    try {
-        if (tipo === 'Patrulhamento') {
-            const pontosPatrulha = JSON.parse(localStorage.getItem('pontosPatrulhamento')) || [];
-            const pontoEncontrado = pontosPatrulha.find(p => p && p.apelido && localInputValue.includes(p.apelido));
-            
-            if (pontoEncontrado) {
-                infoRaio = `${pontoEncontrado.raio} m`;
-                bairro = pontoEncontrado.bairro || "-";
-                cidade = pontoEncontrado.cidade || "-";
-                logradouro = `${pontoEncontrado.rua || ''}, ${pontoEncontrado.numero || 'S/N'}`;
-                nomeLocalLimpo = pontoEncontrado.apelido;
-                coordenadas = { lat: pontoEncontrado.lat, lng: pontoEncontrado.lng, raio: pontoEncontrado.raio };
-            }
-        } else if (tipo === 'Baseamento') {
-            const locaisBase = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
-            const localEncontrado = locaisBase.find(l => l && l.apelido && localInputValue.includes(l.apelido));
-            
-            infoRaio = "Ponto Fixo";
-            if (localEncontrado) {
-                bairro = localEncontrado.bairro || "-";
-                cidade = localEncontrado.cidade || "-";
-                logradouro = `${localEncontrado.rua || ''}, ${localEncontrado.numero || 'S/N'}`;
-                nomeLocalLimpo = localEncontrado.apelido;
-                coordenadas = { lat: localEncontrado.lat, lng: localEncontrado.lng, raio: null };
-            }
+    if (tipo === 'Baseamento' || tipo === 'Patrulhamento') {
+        linhaLocal.style.display = 'flex';
+        if (tipo === 'Baseamento') {
+            labelLocal.innerText = "Selecione o Ponto";
+            campoLocal.placeholder = "Busque o ponto...";
+        } else {
+            labelLocal.innerText = "Selecione a Área";
+            campoLocal.placeholder = "Busque a área...";
         }
-    } catch(e) { console.error("Erro dados local:", e); }
-
-    if (tipo !== 'Baseamento' && tipo !== 'Patrulhamento') {
-        nomeLocalLimpo = "---";
-    }
-
-    const ativ = {
-        tipo: tipo,
-        icone: icone,
-        inicio: inicio,
-        fim: fim,
-        local: nomeLocalLimpo,
-        logradouro: logradouro,
-        bairro: bairro,
-        cidade: cidade,
-        detalhe: infoRaio,
-        gps: coordenadas 
-    };
-
-    listaAtividadesTemporaria.push(ativ);
-    
-    listaAtividadesTemporaria.sort((a, b) => {
-        const minA = calcularMinutosParaOrdenacao(a.inicio, inicioGeralOS);
-        const minB = calcularMinutosParaOrdenacao(b.inicio, inicioGeralOS);
-        return minA - minB;
-    });
-
-    renderizarTabelaAtividades();
-    
-    document.getElementById('inicioFracao').value = '';
-    document.getElementById('terminoFracao').value = '';
-    document.getElementById('localAtividade').value = '';
-}
-
-function renderizarTabelaAtividades() {
-    const tbody = document.getElementById('tabelaFracoesTemp');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    
-    listaAtividadesTemporaria.forEach((item, index) => {
-        const bairroShow = item.bairro || '-';
-        const cidadeShow = item.cidade || '-';
-        const detalheShow = item.detalhe || '-';
-        const logradouroShow = item.logradouro || '-';
-
-        // Correção: data-label adicionado em todas as colunas
-        tbody.innerHTML += `
-            <tr>
-                <td data-label="Atividade"><span style="font-size:1.1rem; margin-right:5px;">${item.icone}</span> ${item.tipo}</td>
-                <td data-label="Início">${item.inicio}</td>
-                <td data-label="Fim">${item.fim}</td>
-                <td data-label="Local"><strong>${item.local}</strong></td>
-                <td data-label="Logradouro">${logradouroShow}</td>
-                <td data-label="Bairro">${bairroShow}</td>
-                <td data-label="Município">${cidadeShow}</td>
-                <td data-label="Detalhes"><span style="color:${item.tipo === 'Patrulhamento' ? '#d32f2f' : '#555'}; font-weight:bold;">${detalheShow}</span></td>
-                <td data-label="Ação" style="text-align: center;"><button class="btn-danger" style="padding: 5px 10px; height: 35px;" onclick="removerFracao(${index})">X</button></td>
-            </tr>`;
-    });
-}
-
-function removerFracao(index) {
-    listaAtividadesTemporaria.splice(index, 1);
-    renderizarTabelaAtividades();
-}
-
-// --- FINALIZAR ---
-function finalizarOS() {
-    if (listaAtividadesTemporaria.length === 0) {
-        alert("Adicione ao menos uma atividade.");
-        return;
-    }
-
-    let bancoOS = [];
-    try { bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || []; } catch(e) { bancoOS = []; }
-    if(!Array.isArray(bancoOS)) bancoOS = [];
-
-    let numeroParaSalvar = document.getElementById('numOS').value;
-    const selDuracao = document.getElementById('turnoDuracao');
-    const textoDuracao = selDuracao.options[selDuracao.selectedIndex].text;
-
-    const dadosFormulario = {
-        tipoRecurso: document.getElementById('tipoRecursoOS').value,
-        nomeOS: document.getElementById('nomeOS').value,
-        inicioGeral: document.getElementById('inicioGeral').value,
-        terminoGeral: document.getElementById('terminoGeral').value,
-        duracaoTexto: textoDuracao,
-        prescricoes: document.getElementById('prescricoesDiversas').value,
-        atividades: listaAtividadesTemporaria,
-        status: 'Ativa',
-        dataCriacao: new Date().toISOString(),
-        dataEncerramento: null,
-        criadoPor: "Coordenação"
-    };
-
-    if (idEdicaoOS === -1) {
-        const novoObj = { ...dadosFormulario, numero: numeroParaSalvar, osOrigem: null };
-        bancoOS.push(novoObj);
-        localStorage.setItem('proximoOS', parseInt(numeroParaSalvar) + 1);
-        alert("Ordem de Serviço criada!");
+        carregarSugestoesLocais(tipo);
     } else {
-        if (bancoOS[idEdicaoOS]) {
-            bancoOS[idEdicaoOS].status = 'Inativa';
-            bancoOS[idEdicaoOS].dataEncerramento = new Date().toISOString();
-        }
-        let proximoNum = localStorage.getItem('proximoOS') || 1001;
-        const novaVersaoObj = { ...dadosFormulario, numero: proximoNum, osOrigem: bancoOS[idEdicaoOS].numero };
-        bancoOS.push(novaVersaoObj);
-        localStorage.setItem('proximoOS', parseInt(proximoNum) + 1);
-        alert(`OS Atualizada! Nova OS: ${proximoNum}`);
-    }
-
-    localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
-    prepararNovoCadastro();
-    carregarOS();
-}
-
-function encerrarOS(index) {
-    if (!confirm("Deseja encerrar esta OS?")) return;
-    let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
-    if (bancoOS[index]) {
-        bancoOS[index].status = 'Inativa';
-        bancoOS[index].dataEncerramento = new Date().toISOString();
-        localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
-        carregarOS();
+        linhaLocal.style.display = 'none';
+        campoLocal.value = "";
+        document.getElementById('nomeOperacao').value = ""; 
     }
 }
 
-// --- EXIBIÇÃO BANCO (CORRIGIDA COM DATA-LABEL e BOTÕES) ---
-function carregarOS() {
-    let bancoOS = [];
-    try { bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || []; } catch (e) { bancoOS = []; }
-    if (!Array.isArray(bancoOS)) bancoOS = [];
+function carregarSugestoesLocais(tipoSelecionado) {
+    const lista = document.getElementById('listaLocais');
+    if (!lista) return;
+    lista.innerHTML = '';
+    const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
+    const patrulhas = JSON.parse(localStorage.getItem('pontosPatrulhamento')) || [];
 
-    const tbody = document.getElementById('corpoTabelaOS');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    const osFiltradas = bancoOS.map((os, index) => ({ ...os, originalIndex: index }))
-        .filter(os => os.status === statusFiltroAtual)
-        .sort((a, b) => b.numero - a.numero);
-
-    if (osFiltradas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhuma OS.</td></tr>`;
-        return;
+    let fonte = [];
+    if (tipoSelecionado === 'Baseamento') {
+        fonte = locais.filter(l => l && l.status !== 'Inativo');
+    } else if (tipoSelecionado === 'Patrulhamento') {
+        fonte = patrulhas.filter(p => p && p.status !== 'Inativo');
+    } else {
+        fonte = [...locais, ...patrulhas];
     }
 
-    osFiltradas.forEach((os) => {
-        const duracaoShow = os.duracaoTexto || 'Personalizado';
-        let botoesAcao = os.status === 'Ativa' 
-            ? `<button class="btn-warning" onclick="editarOS(${os.originalIndex})">Atualizar</button>
-               <button class="btn-delete" onclick="encerrarOS(${os.originalIndex})">Encerrar</button>`
-            : `<small style="color: #d32f2f;">Encerrada</small>`;
-
-        // AQUI ESTÁ A CORREÇÃO: data-label ADICIONADOS e acoes-container
-        tbody.innerHTML += `
-            <tr>
-                <td data-label="Nº OS"><b>${os.numero}</b></td>
-                <td data-label="Recurso">${os.tipoRecurso}</td> 
-                <td data-label="Missão">${os.nomeOS}</td>
-                <td data-label="Duração">${duracaoShow}</td>
-                <td data-label="Turno">${os.inicioGeral} - ${os.terminoGeral}</td> 
-                <td data-label="Ações" style="text-align: center;">
-                    <div class="acoes-container">
-                        <button class="btn-info" onclick="abrirImpressao(${os.originalIndex})" style="padding: 5px 10px;">📄 Imprimir</button>
-                        ${botoesAcao}
-                    </div>
-                </td>
-            </tr>`;
+    fonte.forEach(l => {
+        const option = document.createElement('option');
+        option.value = l.apelido;
+        lista.appendChild(option);
     });
 }
 
-function abrirImpressao(index) {
-    const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
-    const osParaImprimir = bancoOS[index];
-    localStorage.setItem('osImpressaoTemp', JSON.stringify(osParaImprimir));
-    window.open('impressao.html', '_blank');
-}
-
-function editarOS(index) {
-    const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
-    const os = bancoOS[index];
-    idEdicaoOS = index;
-
-    document.getElementById('numOS').value = os.numero;
-    document.getElementById('nomeOS').value = os.nomeOS;
-    document.getElementById('tipoRecursoOS').value = os.tipoRecurso || 'Viatura';
-    document.getElementById('inicioGeral').value = os.inicioGeral;
-    document.getElementById('terminoGeral').value = os.terminoGeral;
-    document.getElementById('prescricoesDiversas').value = os.prescricoes || '';
-    document.getElementById('turnoDuracao').value = "0"; 
-
-    listaAtividadesTemporaria = [...os.atividades];
-    listaAtividadesTemporaria.sort((a, b) => {
-        const minA = calcularMinutosParaOrdenacao(a.inicio, os.inicioGeral);
-        const minB = calcularMinutosParaOrdenacao(b.inicio, os.inicioGeral);
-        return minA - minB;
-    });
-
-    renderizarTabelaAtividades();
-    document.getElementById('formTitle').innerText = `Atualizando OS: ${os.numero}`;
-    document.getElementById('btnFinalizar').innerText = "Gerar Nova Versão";
-    liberarFracionamento();
-    document.getElementById('btnCriarOS').style.display = 'none';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function prepararNovoCadastro() {
-    listaAtividadesTemporaria = [];
-    idEdicaoOS = -1;
-    document.getElementById('formTitle').innerText = "Nova Ordem de Serviço";
-    document.getElementById('btnFinalizar').innerText = "Finalizar e Gravar OS";
-    cancelarCriacao();
-    const proxima = localStorage.getItem('proximoOS') || 1001;
-    document.getElementById('numOS').value = proxima;
-    document.getElementById('nomeOS').value = '';
-    document.getElementById('inicioGeral').value = '';
-    document.getElementById('terminoGeral').value = '';
-    document.getElementById('prescricoesDiversas').value = '';
-    document.getElementById('turnoDuracao').value = "12";
-    document.getElementById('tipoRecursoOS').value = "Viatura"; 
-    
-    document.getElementById('tipoAtividade').value = "Preleção"; 
-    atualizarInterfaceAtividade();
-    renderizarTabelaAtividades();
-}
-
+// --- FLUXO DE CRIAÇÃO ---
 function liberarFracionamento() {
     const nome = document.getElementById('nomeOS').value;
     const ini = document.getElementById('inicioGeral').value;
     const fim = document.getElementById('terminoGeral').value;
 
-    if(!nome || !ini || !fim) {
-        alert("Preencha Missão e Turno.");
-        return;
-    }
+    if(!nome || !ini || !fim) { alert("Preencha Missão e Turno."); return; }
 
-    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral', 'turnoDuracao', 'tipoRecursoOS'];
-    inputs.forEach(id => document.getElementById(id).disabled = true);
+    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+        document.getElementById(id).disabled = true;
+    });
 
     document.getElementById('areaFracionamento').style.display = 'block';
     const btn = document.getElementById('btnCriarOS');
-    btn.innerText = "Cancelar";
-    btn.className = "btn-cancelar";
+    btn.innerText = "Cancelar / Editar Cabeçalho";
+    btn.className = "btn-secondary";
     btn.setAttribute('onclick', 'cancelarCriacao()');
     
     atualizarInterfaceAtividade();
 }
 
 function cancelarCriacao() {
-    const inputs = ['nomeOS', 'inicioGeral', 'terminoGeral', 'turnoDuracao', 'tipoRecursoOS'];
-    inputs.forEach(id => document.getElementById(id).disabled = false);
+    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+        document.getElementById(id).disabled = false;
+    });
     document.getElementById('areaFracionamento').style.display = 'none';
     const btn = document.getElementById('btnCriarOS');
     btn.innerText = "Criar e Fracionar";
     btn.className = "btn-primary";
     btn.setAttribute('onclick', 'liberarFracionamento()');
+    idEdicaoOS = -1;
 }
 
-function migrarDadosAntigos() {
-    let bancoOS = [];
-    try { bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || []; } catch(e) { bancoOS = []; }
-    if(!Array.isArray(bancoOS)) bancoOS = [];
-    let houveMudanca = false;
-    bancoOS.forEach(os => {
-        if (!os.status) { os.status = 'Ativa'; houveMudanca = true; }
+// --- ADICIONAR ATIVIDADE ---
+function adicionarAtividade() {
+    const tipo = document.getElementById('tipoAtividade').value;
+    const inicio = document.getElementById('horaInicioAtiv').value;
+    const fim = document.getElementById('horaFimAtiv').value;
+    const local = document.getElementById('localAtividade').value;
+    const operacao = document.getElementById('nomeOperacao').value.toUpperCase().trim();
+
+    if (!inicio || !fim) return alert("Preencha os horários.");
+    if ((tipo === 'Baseamento' || tipo === 'Patrulhamento') && !local) return alert("Selecione o local.");
+
+    let detalhes = "-";
+    let rua = "-";
+    let numero = "-";
+    let bairro = "-";
+    let cidade = "-";
+    let gps = null;
+
+    if (local) {
+        const locaisDB = [...(JSON.parse(localStorage.getItem('locaisCadastrados'))||[]), ...(JSON.parse(localStorage.getItem('pontosPatrulhamento'))||[])];
+        const localObj = locaisDB.find(l => l.apelido === local);
+        if (localObj) {
+            detalhes = localObj.obs || (localObj.raio ? `Raio ${localObj.raio}m` : "Ponto Fixo");
+            rua = localObj.rua || "-";
+            numero = localObj.numero || "S/N";
+            bairro = localObj.bairro || "-";
+            cidade = localObj.cidade || "-";
+            if (localObj.lat) {
+                gps = { lat: localObj.lat, lng: localObj.lng };
+                if (localObj.raio) gps.raio = localObj.raio;
+            }
+        }
+    }
+
+    const novaAtiv = { id: Date.now(), tipo, inicio, fim, local, operacao, rua, numero, bairro, cidade, detalhes, gps };
+
+    listaAtividadesTemporaria.push(novaAtiv);
+    
+    // --- NOVA ORDENAÇÃO INTELIGENTE (CONSIDERA O INÍCIO DO TURNO) ---
+    ordenarAtividadesPorTurno();
+    
+    document.getElementById('localAtividade').value = "";
+    document.getElementById('nomeOperacao').value = "";
+    renderizarTabelaAtividades();
+}
+
+// Função Auxiliar para converter "HH:MM" em minutos
+function getMinutos(hora) {
+    if (!hora) return 0;
+    const [h, m] = hora.split(':').map(Number);
+    return h * 60 + m;
+}
+
+// Função principal de ordenação
+function ordenarAtividadesPorTurno() {
+    const inicioTurnoStr = document.getElementById('inicioGeral').value;
+    if (!inicioTurnoStr) return; // Se não tiver início, não ordena ou usa padrão
+
+    const inicioTurnoMin = getMinutos(inicioTurnoStr);
+
+    listaAtividadesTemporaria.sort((a, b) => {
+        let minA = getMinutos(a.inicio);
+        let minB = getMinutos(b.inicio);
+
+        // Lógica da Virada: Se o horário da atividade for MENOR que o início do turno,
+        // assume-se que é no dia seguinte (soma 24h = 1440 min).
+        // Ex: Início Turno 22:00 (1320m). Atividade 02:00 (120m).
+        // 120 < 1320 -> 120 + 1440 = 1560m. Agora 1560 > 1320 (Fica depois).
+        
+        if (minA < inicioTurnoMin) minA += 1440;
+        if (minB < inicioTurnoMin) minB += 1440;
+
+        return minA - minB;
     });
-    if (houveMudanca) localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
+}
+
+function renderizarTabelaAtividades() {
+    const tbody = document.getElementById('tabelaAtividades');
+    tbody.innerHTML = '';
+
+    listaAtividadesTemporaria.forEach((ativ, index) => {
+        const classeLinha = ativ.operacao ? "tr-operacao" : "";
+        
+        const localTexto = `<strong>${ativ.local || '-'}</strong>`;
+        const operacaoTexto = ativ.operacao ? `<span class="badge-operacao">OP: ${ativ.operacao}</span>` : '-';
+        const ruaTexto = ativ.rua || '-';
+        const bairroTexto = ativ.bairro || '-';
+        const numeroTexto = ativ.numero || '-';
+        const cidadeTexto = ativ.cidade || '-';
+        const detalhesTexto = ativ.detalhes || '-';
+
+        const tr = document.createElement('tr');
+        tr.className = classeLinha;
+        tr.innerHTML = `
+            <td>${ativ.tipo}</td>
+            <td>${ativ.inicio}</td>
+            <td>${ativ.fim}</td>
+            <td>${localTexto}</td>
+            <td>${operacaoTexto}</td>
+            <td>${ruaTexto}</td>
+            <td>${numeroTexto}</td>
+            <td>${bairroTexto}</td>
+            <td>${cidadeTexto}</td>
+            <td>${detalhesTexto}</td>
+            <td><button onclick="removerAtividade(${index})" class="btn-remove-sm" style="color:red;border:none;background:none;font-weight:bold;">X</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function removerAtividade(index) {
+    listaAtividadesTemporaria.splice(index, 1);
+    renderizarTabelaAtividades();
+}
+
+// --- FINALIZAR OS ---
+function finalizarOS() {
+    if (listaAtividadesTemporaria.length === 0) return alert("Adicione atividades.");
+
+    let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const novoNumero = bancoOS.length > 0 ? Math.max(...bancoOS.map(o => o.numero)) + 1 : 1001;
+
+    const novaOS = {
+        numero: novoNumero,
+        id: Date.now(),
+        criadoEm: new Date().toISOString(),
+        status: 'Ativa',
+        tipoOrdem: document.getElementById('tipoOrdem').value,
+        nomeOS: document.getElementById('nomeOS').value,
+        tipoRecurso: document.getElementById('tipoRecursoOS').value,
+        inicioGeral: document.getElementById('inicioGeral').value,
+        terminoGeral: document.getElementById('terminoGeral').value,
+        atividades: listaAtividadesTemporaria
+    };
+
+    bancoOS.push(novaOS);
+    localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
+
+    let msg = `Nova Ordem de Serviço criada: Nº ${novoNumero}.`;
+    if (idEdicaoOS !== -1) msg += `\n(Gerada a partir da cópia de uma OS anterior).`;
+    alert(msg);
+
+    prepararNovoCadastro();
+    carregarOS();
+}
+
+// --- TABELA PRINCIPAL ---
+function carregarOS() {
+    const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const tbody = document.getElementById('corpoTabelaOS');
+    tbody.innerHTML = '';
+
+    const filtradas = bancoOS.filter(os => os.status === statusFiltroAtual);
+    filtradas.sort((a,b) => b.numero - a.numero);
+
+    filtradas.forEach(os => {
+        // Verifica se tem operação
+        const operacaoEncontrada = os.atividades.find(a => a.operacao);
+        let detalhesOp = '<span style="color:#999; font-size:0.8rem;">Rotina</span>';
+        
+        if (operacaoEncontrada) {
+            detalhesOp = `<span class="badge-op-table">[OP] ${operacaoEncontrada.operacao}</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${os.numero}</strong></td>
+            <td><span class="badge-tipo">${os.tipoOrdem || 'ORDINÁRIA'}</span></td>
+            <td>${os.tipoRecurso}</td>
+            <td>${os.nomeOS}</td>
+            <td>
+                <div style="line-height:1.2;">
+                    <div><strong>Início:</strong> ${os.inicioGeral}</div>
+                    <div><strong>Fim:</strong> ${os.terminoGeral}</div>
+                </div>
+            </td>
+            <td>
+                <div style="line-height:1.2;">
+                    ${detalhesOp}
+                </div>
+            </td>
+            <td style="text-align: center;">
+                <button onclick="copiarParaEditar(${os.id})" class="btn-warning" style="padding:6px 10px;">Editar</button>
+                <button onclick="imprimirOS(${os.id})" class="btn-info" style="padding:6px 10px;">Imprimir</button>
+                ${statusFiltroAtual === 'Ativa' ? `<button onclick="arquivarOS(${os.id})" class="btn-secondary" style="padding:6px 10px;">Arquivar</button>` : ''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function copiarParaEditar(id) {
+    const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const os = bancoOS.find(o => o.id === id);
+    if (!os) return;
+
+    document.getElementById('tipoOrdem').value = os.tipoOrdem || 'ORDINÁRIA';
+    document.getElementById('nomeOS').value = os.nomeOS;
+    document.getElementById('tipoRecursoOS').value = os.tipoRecurso;
+    document.getElementById('inicioGeral').value = os.inicioGeral;
+    document.getElementById('terminoGeral').value = os.terminoGeral;
+
+    listaAtividadesTemporaria = JSON.parse(JSON.stringify(os.atividades));
+    
+    // Reordena ao carregar para garantir
+    // Mas precisamos setar o valor do input primeiro, o que já foi feito acima
+    ordenarAtividadesPorTurno();
+
+    liberarFracionamento();
+    renderizarTabelaAtividades();
+
+    idEdicaoOS = id; 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('btnFinalizar').innerText = "Gerar Nova OS (Baseada na Edição)";
+}
+
+function arquivarOS(id) {
+    if(!confirm("Arquivar esta OS?")) return;
+    let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const index = bancoOS.findIndex(o => o.id === id);
+    if(index !== -1) {
+        bancoOS[index].status = 'Inativa';
+        localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
+        carregarOS();
+    }
+}
+
+function mudarFiltro(status) {
+    statusFiltroAtual = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`btnFiltro${status}`).classList.add('active');
+    carregarOS();
+}
+
+function prepararNovoCadastro() {
+    document.getElementById('tipoOrdem').value = 'ORDINÁRIA';
+    document.getElementById('nomeOS').value = '';
+    document.getElementById('inicioGeral').value = '';
+    document.getElementById('terminoGeral').value = '';
+    
+    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+        document.getElementById(id).disabled = false;
+    });
+
+    document.getElementById('areaFracionamento').style.display = 'none';
+    const btn = document.getElementById('btnCriarOS');
+    btn.innerText = "Criar e Fracionar";
+    btn.className = "btn-primary";
+    btn.setAttribute('onclick', 'liberarFracionamento()');
+    
+    document.getElementById('btnFinalizar').innerText = "Finalizar e Gravar Nova OS";
+
+    listaAtividadesTemporaria = [];
+    idEdicaoOS = -1;
+    renderizarTabelaAtividades();
+}
+
+// --- IMPRESSÃO PDF ---
+function imprimirOS(id) {
+    const bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const os = bancoOS.find(o => o.id === id);
+    if (!os) return;
+
+    const atividades = os.atividades.map(ativ => {
+        const icone = (() => {
+            if (!ativ.tipo) return '';
+            const t = ativ.tipo.toLowerCase();
+            if (t.includes('patrulhamento')) return '🚔';
+            if (t.includes('baseamento')) return '🛡️';
+            if (t.includes('deslocamento')) return '🚚';
+            if (t.includes('intervalo')) return '🍽️';
+            if (t.includes('preleção') || t.includes('prelecao')) return '🎯';
+            if (t.includes('retorno')) return '↩️';
+            return '📝';
+        })();
+
+        const logradouro = ativ.rua && ativ.rua !== '-'
+            ? `${ativ.rua}${ativ.numero && ativ.numero !== '-' ? `, ${ativ.numero}` : ''}`
+            : (ativ.endereco || '-');
+
+        const gps = ativ.gps ? { ...ativ.gps } : null;
+        if (gps && ativ.raio) gps.raio = ativ.raio;
+
+        const detalheFinal = ativ.operacao
+            ? `[OP: ${ativ.operacao}] ${ativ.detalhes || ''}`.trim()
+            : (ativ.detalhes || '-');
+
+        return {
+            tipo: ativ.tipo,
+            icone,
+            inicio: ativ.inicio,
+            fim: ativ.fim,
+            local: ativ.local || '-',
+            logradouro: logradouro || '-',
+            bairro: ativ.bairro || '-',
+            cidade: ativ.cidade || '-',
+            detalhe: detalheFinal,
+            gps
+        };
+    });
+
+    const dadosImpressao = {
+        numero: os.numero,
+        nomeOS: os.nomeOS,
+        tipoRecurso: os.tipoRecurso,
+        inicioGeral: os.inicioGeral,
+        terminoGeral: os.terminoGeral,
+        status: os.status || 'Ativa',
+        atividades
+    };
+
+    localStorage.setItem('osImpressaoTemp', JSON.stringify(dadosImpressao));
+    window.open('impressao.html', '_blank');
 }

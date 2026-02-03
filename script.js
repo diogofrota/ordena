@@ -9,7 +9,6 @@ const btnCancelar = document.getElementById('btnCancelar');
 let statusFiltroAtual = 'Ativa';
 
 document.addEventListener('DOMContentLoaded', () => {
-    migrarViaturasAntigas();
     exibirViaturas();
     aplicarMascaras();
 });
@@ -35,26 +34,6 @@ function aplicarMascaras() {
             if (valor.length > 7) valor = valor.slice(0, 7);
             e.target.value = valor;
         });
-    }
-}
-
-// --- MIGRAÇÃO DE DADOS ANTIGOS ---
-function migrarViaturasAntigas() {
-    let viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
-    let houveMudanca = false;
-
-    viaturas.forEach(v => {
-        if (!v.status) { v.status = 'Ativa'; houveMudanca = true; }
-        if (!v.tipo) { v.tipo = 'Carro'; houveMudanca = true; }
-        // Se tem rádio preenchido, define a flag temRadio
-        if (v.temRadio === undefined) {
-            v.temRadio = (v.radio && v.radio.trim() !== "") ? true : false;
-            houveMudanca = true;
-        }
-    });
-
-    if (houveMudanca) {
-        localStorage.setItem('viaturas', JSON.stringify(viaturas));
     }
 }
 
@@ -176,5 +155,20 @@ function prepararEdicao(index) {
 function cancelarEdicao() {
     editIndexField.value = "-1";
     btnSalvar.innerText = "Salvar Registro";
-    
-    btnSalvar.classList.remove('btn-info');}
+    btnSalvar.classList.remove('btn-info');
+    btnSalvar.classList.add('btn-primary');
+    if (btnCancelar) btnCancelar.style.display = "none";
+    form.reset();
+}
+
+function alternarStatus(index) {
+    const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
+    const v = viaturas[index];
+    if (!v) return;
+    const novoStatus = v.status === 'Ativa' ? 'Inativa' : 'Ativa';
+    if (confirm(`Alterar status da viatura ${v.prefixo}?`)) {
+        viaturas[index].status = novoStatus;
+        localStorage.setItem('viaturas', JSON.stringify(viaturas));
+        exibirViaturas();
+    }
+}

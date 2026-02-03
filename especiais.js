@@ -8,7 +8,6 @@ let idEventoParaEncerrar = null;
 let idEdicaoGlobal = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    migrarBancoEspeciais();
     carregarEventosAtivos(); 
     carregarSugestoesLocais(); 
 });
@@ -392,7 +391,6 @@ function confirmarEncerramento() {
     }
 }
 
-function migrarBancoEspeciais() { if(!localStorage.getItem('ordensEspeciais')) localStorage.setItem('ordensEspeciais', JSON.stringify([])); }
 function atualizarInterfaceEditor() {
     const t = document.getElementById('tipoAtividadeEditor').value;
     document.getElementById('linhaLocalEditor').style.display = (t==='Baseamento'||t==='Patrulhamento')?'flex':'none';

@@ -3,183 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORDENA</title>
+    <title>ORDENA - Gerenciador de OS</title>
     <link rel="icon" href="ordenar.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         .filter-btn { padding: 8px 16px; border: 1px solid #1a237e; background: white; color: #1a237e; cursor: pointer; border-radius: 20px; font-weight: 600; transition: all 0.3s; }
         .filter-btn.active { background: #1a237e; color: white; }
+        
         .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
         .status-ativa { background: #d4edda; color: #155724; }
         .status-inativa { background: #f8d7da; color: #721c24; }
-        .btn-cancelar { background-color: #6c757d !important; color: white; width: 100%; }
-        
-        .input-travado { background-color: #e9ecef !important; color: #6c757d; cursor: not-allowed; }
 
-        /* --- CORREÇÃO DOS BOTÕES (MOBILE) --- */
-        .acoes-container {
+        /* DESTAQUE PARA OPERAÇÃO NA TABELA DE FRACIONAMENTO */
+        .tr-operacao { background-color: #e3f2fd !important; border-left: 4px solid #1976d2; }
+        .badge-operacao { background-color: #1565c0; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-right: 5px; }
+
+        /* LAYOUT COMPACTO DO CABEÇALHO (Tudo em uma linha) */
+        .row-compact {
             display: flex;
-            justify-content: flex-end;
-            gap: 5px;
-            align-items: center;
-            flex-wrap: wrap; /* Permite quebrar linha se faltar espaço */
+            align-items: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
         }
+        .col-compact-sm { width: 12%; min-width: 100px; } /* Para Tipo e Horários */
+        .col-compact-md { width: 15%; min-width: 140px; } /* Para Recurso */
+        .col-compact-lg { flex-grow: 1; min-width: 200px; } /* Para Missão */
+        .col-compact-btn { width: 15%; min-width: 120px; } /* Para Botão */
 
-        @media (max-width: 900px) {
-            .acoes-container {
-                justify-content: center;
-                width: 100%;
-            }
-            .acoes-container button {
-                flex: 1 1 auto; /* Botões crescem para encher a linha */
-                min-width: 80px;
-                margin-bottom: 4px;
-            }
+        /* INPUT GROUP PARA OPERAÇÃO */
+        .input-group { display: flex; gap: 5px; width: 100%; }
+        .btn-plus { 
+            background: #17a2b8; color: white; border: none; border-radius: 4px; 
+            width: 38px; font-weight: bold; font-size: 1.2rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-plus:hover { background: #138496; }
+
+        /* Botões de ação na tabela */
+        .btn-icon {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 5px;
+            transition: 0.2s;
+        }
+        .btn-edit { background: #ffc107; color: #333; }
+        .btn-print { background: #17a2b8; color: white; }
+        .btn-archive { background: #6c757d; color: white; }
+        .btn-icon:hover { filter: brightness(92%); }
+
+        @media (max-width: 1100px) {
+            .row-compact { display: grid; grid-template-columns: 1fr 1fr; }
+            .col-compact-sm, .col-compact-md, .col-compact-lg, .col-compact-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
-<nav>
-    <div class="logo">ORDENA</div>
-    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
-</nav>
-
-<div id="sidebar" class="sidebar">
-    <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
-    <ul class="sidebar-menu">
-        <li><a href="index.html">Início</a></li>
-        <li class="has-submenu">
-            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a>
-            <ul class="submenu">
-                <li><a href="cadastro.html">● Viaturas</a></li>
-                <li><a href="cabines.html">● Cabines</a></li>
-                <li><a href="setores.html">● Setores a Pé</a></li>
-            </ul>
-        </li>
-        
-        <li class="has-submenu">
-            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais  ▾</a>
-            <ul class="submenu">
-                <li><a href="enderecos.html">● Baseamento</a></li>
-                <li><a href="patrulhamento.html">● Patrulhamento</a></li>
-            </ul>
-        </li>
-
-        <!-- <li><a href="enderecos.html">Pontos Base/PTR</a></li> -->
-
-        <li class="has-submenu">
-            <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
-            <ul class="submenu">
-                <li><a href="os.html">● Ordens Diárias</a></li>
-                <li><a href="especiais.html">● Ordens Especiais </a></li>
-            </ul>
-        </li>
-
-        <!-- <li><a href="os.html">QMD (Missões)</a></li>  -->
-        <li><a href="planejamento.html">Planejamento</a></li> 
-        <li><a href="escalamento.html">Ativação</a></li>
-        <li><a href="historico.html">Histórico</a></li>
-        <li><a href="mapa_tatico.html">Mapa Tático</a></li>
-        <li><a href="dashboard.html">Dashboard</a></li>
-    </ul>
-</div>
-<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
-<script src="menu.js"></script>
+    <nav>
+        <div class="logo">ORDENA</div>
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    </nav>
+    
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <ul class="sidebar-menu">
+            <li><a href="index.html">Início</a></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html" style="color: #1a237e; font-weight: bold;">● Ordens Diárias</a></li></ul></li>
+            <li><a href="escalamento.html">Ativação</a></li>
+            <li><a href="historico.html">Histórico de Ativações</a></li>
+            <li><a href="mapa_tatico.html">Mapa Tático</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+        </ul>
+    </div>
+    <script src="menu.js"></script>
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
 
     <main>
-        <div class="card-container-main">
-            <h2 id="formTitle">Nova Ordem de Serviço</h2>
-            
-            <div id="cabecalhoOS">
-                <div class="row" style="align-items: flex-end;">
+        <div id="modalOperacao" class="modal-overlay" style="display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+            <div class="modal-content" style="background:white; padding:25px; border-radius:8px; width:90%; max-width:500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+                <h3 style="color:#1a237e; margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Nova Operação / Evento</h3>
+                
+                <label>Nome da Operação</label>
+                <input type="text" id="modalOpNome" class="input-padrao" placeholder="Ex: OPERAÇÃO VERÃO 2026">
+                
+                <label>Descrição / Detalhes</label>
+                <textarea id="modalOpDesc" class="input-padrao" style="height: 80px;" placeholder="Explique o objetivo, efetivo previsto, etc..."></textarea>
+                
+                <div class="row" style="margin-bottom: 0;">
                     <div class="col-1">
-                        <label class="label-resumo">Nº OS (Automático)</label>
-                        <input type="text" id="numOS" readonly class="input-padrao" style="background: #e9ecef; font-weight: bold; text-align: center;">
+                        <label>Início Previsto</label>
+                        <input type="datetime-local" id="modalOpInicio" class="input-padrao">
                     </div>
-                    <div class="col-2">
-                        <label class="label-resumo">Aplicação do Recurso (Tipo)</label>
+                    <div class="col-1">
+                        <label>Término Previsto</label>
+                        <input type="datetime-local" id="modalOpFim" class="input-padrao">
+                    </div>
+                </div>
+
+                <div style="text-align:right; display:flex; gap:10px; justify-content:flex-end; margin-top: 20px;">
+                    <button onclick="fecharModalOperacao()" class="btn-secondary">Cancelar</button>
+                    <button onclick="salvarOperacaoDetalhada()" class="btn-success">Salvar Operação</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-container-main">
+            <h2>Criar Ordem de Serviço (Rotina)</h2>
+            <p style="color: #666; font-size: 0.9rem;">Preencha os dados básicos para liberar o fracionamento.</p>
+            
+            <div id="formCabecalho">
+                <div class="row-compact">
+                    <div class="col-compact-sm">
+                        <label>Tipo</label>
+                        <select id="tipoOrdem" class="input-padrao">
+                            <option value="ORDINÁRIA">ORDINÁRIA</option>
+                            <option value="APREV">APREV</option>
+                            <option value="ROTEIRO">ROTEIRO</option>
+                            <option value="EXTRA">EXTRA</option>
+                            <option value="OPERAÇÃO">OPERAÇÃO</option>
+                        </select>
+                    </div>
+
+                    <div class="col-compact-lg">
+                        <label>Missão (Nome da OS)</label>
+                        <input type="text" id="nomeOS" class="input-padrao" placeholder="Ex: Patrulhamento Centro">
+                    </div>
+                    
+                    <div class="col-compact-md">
+                        <label>Recurso</label>
                         <select id="tipoRecursoOS" class="input-padrao">
-                            <option value="Viatura">Carro</option>
-                            <option value="Moto">Motocicleta</option>
+                            <option value="Viatura">Viatura</option>
+                            <option value="Moto">Moto</option>
                             <option value="Cabine">Cabine</option>
                             <option value="Setor">Setor a Pé</option>
                         </select>
                     </div>
-                    <div class="col-3">
-                        <label class="label-resumo">Missão / Operação</label>
-                        <input type="text" id="nomeOS" placeholder="Descrição da missão" class="input-padrao">
-                    </div>
-                </div>
 
-                <div class="row header-controls" style="align-items: flex-end;">
-                    <div class="col-1">
-                        <label class="label-resumo">Escala (Duração)</label>
-                        <select id="turnoDuracao" class="input-padrao" onchange="calcularTerminoAutomatico()">
-                            <option value="0">Personalizado</option>
-                            <option value="6">6 Horas</option>
-                            <option value="8">8 Horas</option>
-                            <option value="12" selected>12 Horas</option>
-                        </select>
+                    <div class="col-compact-sm">
+                        <label>Início</label>
+                        <input type="time" id="inicioGeral" class="input-padrao">
                     </div>
-                    <div class="col-1">
-                        <label class="label-resumo">Início Turno</label>
-                        <input type="time" id="inicioGeral" class="input-padrao" onchange="calcularTerminoAutomatico()">
-                    </div>
-                    <div class="col-1">
-                        <label class="label-resumo">Término Turno</label>
+                    <div class="col-compact-sm">
+                        <label>Término</label>
                         <input type="time" id="terminoGeral" class="input-padrao">
                     </div>
-                    <div class="col-1">
-                        <button onclick="liberarFracionamento()" id="btnCriarOS" class="btn-primary" style="width: 100%;">Criar e Fracionar</button>
+
+                    <div class="col-compact-btn">
+                        <button onclick="liberarFracionamento()" id="btnCriarOS" class="btn-primary" style="width: 100%;">Criar</button>
                     </div>
                 </div>
             </div>
 
-            <div id="areaFracionamento" style="display: none; margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 25px;">
-                <h3 style="margin-bottom: 20px;">Roteiro de Atividades</h3>
+            <div id="areaFracionamento" style="display: none; margin-top: 20px; border-top: 2px dashed #ccc; padding-top: 20px;">
+                <h3 style="color: #1a237e;">Fracionamento de Atividades</h3>
                 
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
-                    <div class="row" style="align-items: flex-end;">
-                        <div class="col-2">
-                            <label>Tipo de Atividade</label>
-                            <select id="tipoAtividade" class="input-padrao" onchange="atualizarInterfaceAtividade()">
-                                <option value="Preleção">Preleção</option>
-                                <option value="Intervalo">Intervalo</option>
-                                <option value="Deslocamento">Deslocamento</option>
-                                <option value="Retorno Base">Retorno Base</option>
-                                <optgroup label="Tipos de Policiamento">
-                                    <option value="Baseamento">Baseamento (Ponto Fixo)</option>
-                                    <option value="Patrulhamento">Patrulhamento (Ronda)</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="col-1">
-                            <label>Início</label>
-                            <input type="time" id="inicioFracao" class="input-padrao">
-                        </div>
-                        <div class="col-1">
-                            <label>Término</label>
-                            <input type="time" id="terminoFracao" class="input-padrao">
-                        </div>
-                        <div class="col-1">
-                            <button type="button" onclick="adicionarFracao()" class="btn-info" style="width: 100%;">
-                                + Adicionar
-                            </button>
-                        </div>
+                <div class="row" style="align-items: flex-end;">
+                    <div class="col-2">
+                        <label>Atividade</label>
+                        <select id="tipoAtividade" class="input-padrao" onchange="atualizarInterfaceAtividade()">
+                            <option value="Preleção">Preleção</option>
+                            <option value="Deslocamento">Deslocamento</option>
+                            <option value="Baseamento">Baseamento (Ponto Fixo)</option>
+                            <option value="Patrulhamento">Patrulhamento (Ronda)</option>
+                            <option value="Intervalo">Intervalo/Refeição</option>
+                            <option value="Retorno Base">Retorno Base</option>
+                        </select>
                     </div>
-
-                    <div class="row" id="linhaLocalizacao" style="display: none; margin-top: 15px;">
-                        <div class="col-4" style="width: 100%;">
-                            <label id="labelLocal">Localização / Ponto Focal</label>
-                            <input type="text" id="localAtividade" list="listaLocaisSugestao" class="input-padrao" autocomplete="off" style="width: 100%;">
-                            <datalist id="listaLocaisSugestao"></datalist>
-                        </div>
+                    <div class="col-1">
+                        <label>Início</label>
+                        <input type="time" id="horaInicioAtiv" class="input-padrao">
+                    </div>
+                    <div class="col-1">
+                        <label>Término</label>
+                        <input type="time" id="horaFimAtiv" class="input-padrao">
+                    </div>
+                    <div class="col-1">
+                        <button onclick="adicionarAtividade()" class="btn-info" style="width: 100%;">+ Add</button>
                     </div>
                 </div>
-                
-                <div class="table-responsive" style="margin-top: 20px;">
+
+                <div class="row" id="linhaLocalizacao" style="display: none; margin-top: 10px; align-items: flex-end;">
+                    <div class="col-3">
+                        <label id="labelLocal">Localização</label>
+                        <input type="text" id="localAtividade" list="listaLocais" class="input-padrao" placeholder="Busque o local cadastrado...">
+                        <datalist id="listaLocais"></datalist>
+                    </div>
+                    
+                    <div class="col-2">
+                        <label style="color: #d32f2f; font-weight: bold;">Vincular Operação</label>
+                        <div class="input-group">
+                            <input type="text" id="nomeOperacao" list="listaOperacoes" class="input-padrao" placeholder="Selecione ou Cadastre..." style="border-color: #17a2b8;">
+                            <button class="btn-plus" onclick="abrirModalOperacao()" title="Cadastrar Nova Operação">+</button>
+                        </div>
+                        <datalist id="listaOperacoes"></datalist>
+                    </div>
+                </div>
+
+                <div class="table-responsive" style="margin-top: 15px;">
                     <table>
                         <thead>
                             <tr>
@@ -187,24 +215,22 @@
                                 <th>Início</th>
                                 <th>Fim</th>
                                 <th>Local</th>
-                                <th>Logradouro</th>
-                                <th>Bairro</th>     
-                                <th>Município</th>  
+                                <th>Operação</th>
+                                <th>Rua</th>
+                                <th>Número</th>
+                                <th>Bairro</th>
+                                <th>Cidade</th>
                                 <th>Detalhes</th>
-                                <th style="text-align: center;">Ação</th>
+                                <th style="width: 50px;">Ação</th>
                             </tr>
                         </thead>
-                        <tbody id="tabelaFracoesTemp"></tbody>
+                        <tbody id="tabelaAtividades"></tbody>
                     </table>
                 </div>
 
-                <div style="margin-top: 25px;">
-                    <label style="font-weight: bold; color: #1a237e;">Prescrições Diversas</label>
-                    <textarea id="prescricoesDiversas" class="input-padrao" style="height: 100px; padding: 10px; resize: vertical;" placeholder="Orientações gerais..."></textarea>
-                </div>
                 <div style="margin-top: 30px;">
                     <button onclick="finalizarOS()" id="btnFinalizar" class="btn-success" style="width: 100%; height: 55px; font-size: 1.1rem;">
-                        Finalizar e Gravar OS
+                        Finalizar e Gravar Nova OS
                     </button>
                 </div>
             </div>
@@ -220,13 +246,16 @@
             </div>
 
             <div class="table-responsive">
-                <table id="tabelaOSPrincipal">
+                <table id="tabelaOSPrincipal" style="width: 100%;">
                     <thead>
                         <tr>
                             <th>Nº OS</th>
-                            <th>Recurso</th> <th>Missão</th>
-                            <th>Duração</th>
-                            <th>Turno</th> <th style="text-align: center;">Ações</th>
+                            <th>Tipo</th>
+                            <th>Recurso</th> 
+                            <th>Missão</th>
+                            <th>Turno</th> 
+                            <th>Detalhes</th>
+                            <th style="text-align: center;">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="corpoTabelaOS"></tbody>

@@ -29,6 +29,8 @@
             position: relative;
             box-sizing: border-box; /* Importante para o padding não estourar a largura */
         }
+
+        .page + .page { margin-top: 20px; }
         
         /* Cabeçalho */
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
@@ -52,9 +54,27 @@
             break-inside: avoid; /* Evita que o mapa seja cortado ao meio */
         }
 
+        /* Cards de Pontos (Página 2) */
+        .cards-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .card-ponto { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; break-inside: avoid; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .badge-tipo { background: #1a237e; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .card-title { font-size: 12px; font-weight: bold; color: #333; }
+        .card-meta { font-size: 10px; color: #555; line-height: 1.4; }
+        .card-op { margin-top: 6px; padding: 6px; border-radius: 4px; background: #e3f2fd; border: 1px solid #bbdefb; font-size: 10px; color: #0d47a1; }
+        .card-map { width: 100%; height: 140px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px; }
+
+        @media (max-width: 900px) {
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+
         /* Tabela */
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
         th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        td { min-height: 40px; height: 40px; vertical-align: middle; }
+        .td-wrap { display: flex; flex-direction: column; justify-content: center; min-height: 40px; }
+        tr.row-compact td { min-height: 28px; height: 28px; }
+        tr.row-compact .td-wrap { min-height: 28px; }
         th { background-color: #1a237e; color: white; text-transform: uppercase; font-size: 10px; }
         tr { break-inside: avoid; } /* Evita cortar linhas da tabela */
         tr:nth-child(even) { background-color: #f9f9f9; }
@@ -131,6 +151,7 @@
             .header { border-bottom: 2px solid #000; }
             th { background-color: #eee !important; color: #000 !important; border-bottom: 1px solid #000; }
             .section-title { color: #000; border-bottom: 1px solid #000; }
+            .card-ponto { background: #fff; border: 1px solid #000; }
             
             /* Força quebras de página limpas se necessário */
             .card-quebra { page-break-inside: avoid; }
@@ -145,10 +166,10 @@
 
     <div class="page">
         <div class="header">
-            <div class="header-logo">SGF - Segurança Pública</div>
+            <div class="header-logo">ORDENA</div>
             <div class="header-info">
-                Sistema de Gestão de Frota e Efetivo<br>
-                Coordenação Operacional
+                Sistema desenvolvido pelo CPROEIS<br>
+                Sistema de Gestão de Frota e Efetivo
             </div>
         </div>
 
@@ -191,6 +212,20 @@
                 <div style="margin-top: 3px;">Status: <span id="statusOS"></span></div>
             </div>
         </div>
+    </div>
+
+    <div class="page">
+        <div class="header">
+            <div class="header-logo">ORDENA</div>
+            <div class="header-info">
+                Sistema desenvolvido pelo CPROEIS<br>
+                Sistema de Gestão de Frota e Efetivo
+            </div>
+        </div>
+
+        <div class="os-title">MAPAS DE PONTOS (BASEAMENTO / PATRULHAMENTO)</div>
+        <div class="section-title">Pontos com GPS Configurado</div>
+        <div id="cardsPontos" class="cards-grid"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
