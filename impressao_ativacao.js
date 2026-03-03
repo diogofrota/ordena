@@ -24,7 +24,7 @@ function preencherResumo(escala, os) {
         { label: 'OS Nº', value: escala.osNumero },
         { label: 'Missão', value: escala.osResumo?.nomeOS || os?.nomeOS || '-' },
         { label: 'Turno', value: `${escala.osResumo?.inicioGeral || os?.inicioGeral || '-'} às ${escala.osResumo?.terminoGeral || os?.terminoGeral || '-'}` },
-        { label: 'Tipo de OS', value: escala.osResumo?.tipoOrdem || os?.tipoOrdem || '-' },
+        { label: 'Tipo de Serviço', value: escala.tipoServico || escala.osResumo?.tipoOrdem || os?.tipoOrdem || '-' },
         { label: 'Início da Ativação', value: dataIniTxt }
     ];
 

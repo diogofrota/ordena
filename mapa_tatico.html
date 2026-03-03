@@ -85,9 +85,299 @@
             margin: 0 5px;
         }
 
+        /* LAYOUT PRINCIPAL: PAINEL + MAPA */
+        .operational-layout {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            width: 100%;
+        }
+
+        .sidebar-equipes {
+            width: 360px;
+            max-width: 40vw;
+            min-width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #dfe3ea;
+            display: flex;
+            flex-direction: column;
+            z-index: 2;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-equipes-header {
+            padding: 14px 16px 10px 16px;
+            border-bottom: 1px solid #eef1f6;
+            background: linear-gradient(180deg, #ffffff 0%, #fafbfe 100%);
+        }
+
+        .sidebar-equipes-header h3 {
+            margin: 0;
+            color: #1a237e;
+            font-size: 1.05rem;
+        }
+
+        .sidebar-equipes-header small {
+            color: #666;
+            display: block;
+            margin-top: 4px;
+            font-size: 0.8rem;
+        }
+
+        .sidebar-header-actions {
+            margin-top: 8px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-sidebar-filter {
+            border: 1px solid #1a237e;
+            background: #fff;
+            color: #1a237e;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-sidebar-filter:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .sidebar-equipes-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .equipe-card {
+            background: #fff;
+            border: 1px solid #e7ebf2;
+            border-left: 4px solid #1a237e;
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .equipe-card-clickable {
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+        }
+
+        .equipe-card-clickable:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(26, 35, 126, 0.12);
+        }
+
+        .equipe-card-clickable:focus {
+            outline: 2px solid #93c5fd;
+            outline-offset: 1px;
+        }
+
+        .equipe-card.is-map-selected {
+            border-color: #1a237e;
+            box-shadow: 0 0 0 2px rgba(26, 35, 126, 0.12), 0 6px 14px rgba(26, 35, 126, 0.15);
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        }
+
+        .equipe-card-topo {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .equipe-card.is-collapsed .equipe-card-topo {
+            margin-bottom: 0;
+        }
+
+        .equipe-card-topo-acoes {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .equipe-card-titulo {
+            font-weight: 800;
+            color: #1a237e;
+            font-size: 0.95rem;
+            line-height: 1.2;
+        }
+
+        .badge-servico {
+            background: #e8f0ff;
+            color: #1a237e;
+            border: 1px solid #cfdcff;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        .btn-expandir-card-equipe {
+            width: 26px;
+            height: 22px;
+            border-radius: 6px;
+            border: 1px solid #d8deea;
+            background: #ffffff;
+            color: #1a237e;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+        }
+
+        .btn-expandir-card-equipe:hover {
+            background: #f5f8ff;
+            border-color: #c3d0f3;
+            transform: translateY(-1px);
+        }
+
+        .btn-expandir-card-equipe:focus-visible {
+            outline: 2px solid #93c5fd;
+            outline-offset: 1px;
+        }
+
+        .btn-expandir-card-equipe .chevron {
+            font-size: 0.95rem;
+            font-weight: 700;
+            transform: translateY(-1px);
+        }
+
+        .equipe-card-detalhes {
+            display: none;
+        }
+
+        .equipe-card.is-expanded .equipe-card-detalhes {
+            display: block;
+        }
+
+        .equipe-card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 10px;
+            margin-bottom: 8px;
+        }
+
+        .equipe-item {
+            background: #f7f9fc;
+            border: 1px solid #eef2f8;
+            border-radius: 8px;
+            padding: 6px 8px;
+        }
+
+        .equipe-item span {
+            display: block;
+            font-size: 0.68rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .equipe-item strong {
+            color: #202534;
+            font-size: 0.84rem;
+            line-height: 1.15;
+            word-break: break-word;
+        }
+
+        .equipe-local-atual {
+            border-radius: 8px;
+            border: 1px solid #e7f0ff;
+            background: #f5f9ff;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+        }
+
+        .equipe-local-atual.tema-blue {
+            border-color: #dbeafe;
+            background: #eff6ff;
+        }
+
+        .equipe-local-atual.tema-green {
+            border-color: #bde5c8;
+            background: #edf9f1;
+        }
+
+        .equipe-local-atual.tema-green span {
+            color: #166534;
+        }
+
+        .equipe-local-atual.tema-green small {
+            color: #1f5132;
+        }
+
+        .equipe-local-atual.tema-orange {
+            border-color: #fed7aa;
+            background: #fff7ed;
+        }
+
+        .equipe-local-atual.tema-orange span {
+            color: #9a3412;
+        }
+
+        .equipe-local-atual.tema-orange small {
+            color: #7c2d12;
+        }
+
+        .equipe-local-atual span {
+            display: block;
+            font-size: 0.68rem;
+            color: #4b5563;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .equipe-local-atual strong {
+            color: #111827;
+            font-size: 0.86rem;
+            line-height: 1.2;
+            display: block;
+        }
+
+        .equipe-local-atual small {
+            color: #374151;
+            display: block;
+            margin-top: 4px;
+            font-size: 0.78rem;
+        }
+
+        .sidebar-empty {
+            border: 1px dashed #cdd5e1;
+            background: #f8fafc;
+            color: #64748b;
+            padding: 18px 14px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .map-panel {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            background: #e5e5e5;
+        }
+
         /* MAPA */
         #mapaOperacional {
-            flex: 1;
+            height: 100%;
             width: 100%;
             background: #e5e5e5;
             z-index: 1;
@@ -116,9 +406,76 @@
         .pin-setor { background: #28a745; }
         .pin-cabine { background: #6f42c1; }
 
-        .leaflet-popup-content-wrapper { border-radius: 6px; font-size: 0.9rem; }
+        .leaflet-popup-content-wrapper { border-radius: 8px; font-size: 0.9rem; }
         .popup-header { background: #f1f3f5; padding: 6px 10px; border-bottom: 1px solid #ddd; font-weight: bold; color: #333; }
         .popup-body { padding: 10px; }
+        .popup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .popup-item {
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 6px;
+            padding: 5px 6px;
+            line-height: 1.15;
+        }
+        .popup-item small {
+            display: block;
+            color: #6b7280;
+            font-size: 0.66rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .popup-item strong {
+            font-size: 0.78rem;
+            color: #1f2937;
+            word-break: break-word;
+        }
+        .popup-local {
+            margin-top: 8px;
+            border: 1px solid #dbeafe;
+            background: #eff6ff;
+            border-radius: 6px;
+            padding: 7px;
+        }
+        .popup-local small {
+            display: block;
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .popup-local strong {
+            display: block;
+            color: #111827;
+            font-size: 0.8rem;
+            line-height: 1.15;
+        }
+        .popup-local span {
+            display: block;
+            margin-top: 3px;
+            color: #374151;
+            font-size: 0.76rem;
+        }
+
+        .leaflet-tooltip.marker-service-label {
+            background: rgba(26, 35, 126, 0.95);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-weight: 700;
+            font-size: 0.72rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .leaflet-tooltip.marker-service-label:before {
+            border-right-color: rgba(26, 35, 126, 0.95);
+        }
 
         @media (max-width: 768px) {
             nav { height: 60px; padding: 0 12px; }
@@ -133,11 +490,34 @@
             .kpi-mini-card span { font-size: 0.5rem; }
             .kpi-mini-card strong { font-size: 1.2rem; }
             .separator { display: none; }
-            #mapaOperacional { height: calc(100vh - 120px); }
+            .operational-layout {
+                flex-direction: column;
+            }
+            .sidebar-equipes {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                border-right: none;
+                border-bottom: 1px solid #dfe3ea;
+                max-height: 40vh;
+            }
+            .sidebar-equipes-body {
+                padding: 10px;
+                gap: 10px;
+            }
+            .equipe-card-grid {
+                grid-template-columns: 1fr;
+            }
+            .map-panel {
+                flex: 1;
+                min-height: 280px;
+            }
+            #mapaOperacional { height: 100%; }
         }
     </style>
 </head>
 <body>
+<script src="storage_normalizer.js"></script>
     <nav>
         <div class="logo">ORDENA | COP (Centro de Operações)</div>
       
@@ -183,7 +563,24 @@
         </div>
     </div>
 
-    <div id="mapaOperacional"></div>
+    <div class="operational-layout">
+        <aside class="sidebar-equipes">
+            <div class="sidebar-equipes-header">
+                <h3>Equipes Ativas</h3>
+                <small id="metaEquipesAtivas">Atualização automática (5s)</small>
+                <div class="sidebar-header-actions">
+                    <button id="btnMostrarTodasMapa" type="button" class="btn-sidebar-filter" disabled>Mostrar Todas</button>
+                </div>
+            </div>
+            <div id="listaEquipesAtivas" class="sidebar-equipes-body">
+                <div class="sidebar-empty">Carregando equipes ativas...</div>
+            </div>
+        </aside>
+
+        <div class="map-panel">
+            <div id="mapaOperacional"></div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="mapa_tatico.js"></script>

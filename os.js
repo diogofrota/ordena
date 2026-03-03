@@ -126,7 +126,7 @@ function liberarFracionamento() {
 
     if(!nome || !ini || !fim) { alert("Preencha Missão e Turno."); return; }
 
-    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+    ['nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
         document.getElementById(id).disabled = true;
     });
 
@@ -140,7 +140,7 @@ function liberarFracionamento() {
 }
 
 function cancelarCriacao() {
-    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+    ['nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
         document.getElementById(id).disabled = false;
     });
     document.getElementById('areaFracionamento').style.display = 'none';
@@ -278,7 +278,7 @@ function finalizarOS() {
         id: Date.now(),
         criadoEm: new Date().toISOString(),
         status: 'Ativa',
-        tipoOrdem: document.getElementById('tipoOrdem').value,
+        tipoOrdem: '',
         nomeOS: document.getElementById('nomeOS').value,
         tipoRecurso: document.getElementById('tipoRecursoOS').value,
         inicioGeral: document.getElementById('inicioGeral').value,
@@ -318,15 +318,10 @@ function carregarOS() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${os.numero}</strong></td>
-            <td><span class="badge-tipo">${os.tipoOrdem || 'ORDINÁRIA'}</span></td>
             <td>${os.tipoRecurso}</td>
             <td>${os.nomeOS}</td>
-            <td>
-                <div style="line-height:1.2;">
-                    <div><strong>Início:</strong> ${os.inicioGeral}</div>
-                    <div><strong>Fim:</strong> ${os.terminoGeral}</div>
-                </div>
-            </td>
+            <td>${os.inicioGeral || '-'}</td>
+            <td>${os.terminoGeral || '-'}</td>
             <td>
                 <div style="line-height:1.2;">
                     ${detalhesOp}
@@ -347,7 +342,6 @@ function copiarParaEditar(id) {
     const os = bancoOS.find(o => o.id === id);
     if (!os) return;
 
-    document.getElementById('tipoOrdem').value = os.tipoOrdem || 'ORDINÁRIA';
     document.getElementById('nomeOS').value = os.nomeOS;
     document.getElementById('tipoRecursoOS').value = os.tipoRecurso;
     document.getElementById('inicioGeral').value = os.inicioGeral;
@@ -386,12 +380,11 @@ function mudarFiltro(status) {
 }
 
 function prepararNovoCadastro() {
-    document.getElementById('tipoOrdem').value = 'ORDINÁRIA';
     document.getElementById('nomeOS').value = '';
     document.getElementById('inicioGeral').value = '';
     document.getElementById('terminoGeral').value = '';
     
-    ['tipoOrdem', 'nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
+    ['nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
         document.getElementById(id).disabled = false;
     });
 

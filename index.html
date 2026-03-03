@@ -91,6 +91,7 @@
     </style>
 </head>
 <body>
+<script src="storage_normalizer.js"></script>
 <nav>
     <div class="logo">
         ORDENA 
@@ -133,6 +134,7 @@
             <a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Seriços ▾</a>
             <ul class="submenu">
                 <li><a href="os.html">● Ordens Diárias</a></li>
+                <li><a href="tipos_servico.html">● Tipos de Serviço</a></li>
             </ul>
         </li>
 
@@ -230,14 +232,35 @@
         </div>
 
         <div style="text-align:center; margin-top: 30px;">
-            <button id="btnClearStorage" class="btn-secondary" style="opacity: 0.6; font-size: 0.85rem;">
-                Limpar dados locais
-            </button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                <button id="btnClearStorage" class="btn-secondary" style="opacity: 0.6; font-size: 0.85rem;">
+                    Limpar dados locais
+                </button>
+            </div>
         </div>
     </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const atualizarIndicadoresHome = () => {
+                // 1. Carrega todos os dados
+                const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
+                const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
+                const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
+                const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
+
+                // 2. Filtra APENAS OS ATIVOS
+                const vtrAtivas = viaturas.filter(v => v.status === 'Ativa');
+                const locaisAtivos = locais.filter(l => l.status === 'Ativo');
+                const osAtivas = ordens.filter(os => os.status === 'Ativa');
+
+                // 3. Atualiza a tela com os números filtrados
+                document.getElementById('totalViaturas').innerText = vtrAtivas.length;
+                document.getElementById('totalLocais').innerText = locaisAtivos.length;
+                document.getElementById('totalOS').innerText = osAtivas.length;
+                document.getElementById('totalEscalas').innerText = escalas.length;
+            };
+
             const btnClear = document.getElementById('btnClearStorage');
             if (btnClear) {
                 btnClear.addEventListener('click', () => {
@@ -249,30 +272,7 @@
                 });
             }
 
-            // 1. Carrega todos os dados
-            const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
-            const locais = JSON.parse(localStorage.getItem('locaisCadastrados')) || [];
-            const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
-            const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
-
-            // 2. Filtra APENAS OS ATIVOS (Correção solicitada)
-            // Viaturas: Status 'Ativa'
-            const vtrAtivas = viaturas.filter(v => v.status === 'Ativa');
-            
-            // Locais: Status 'Ativo'
-            const locaisAtivos = locais.filter(l => l.status === 'Ativo');
-            
-            // OS: Status 'Ativa'
-            const osAtivas = ordens.filter(os => os.status === 'Ativa');
-
-            // Escalas: A lista 'escalasAtivas' por natureza só contém as que estão na rua.
-            // (As finalizadas vão para 'historicoEscalas')
-
-            // 3. Atualiza a tela com os números filtrados
-            document.getElementById('totalViaturas').innerText = vtrAtivas.length;
-            document.getElementById('totalLocais').innerText = locaisAtivos.length;
-            document.getElementById('totalOS').innerText = osAtivas.length;
-            document.getElementById('totalEscalas').innerText = escalas.length;
+            atualizarIndicadoresHome();
         });
     </script>
 </body>

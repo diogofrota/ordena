@@ -98,6 +98,7 @@
     </style>
 </head>
 <body>
+<script src="storage_normalizer.js"></script>
     <nav>
         <div class="logo">ORDENA</div>
         <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
@@ -109,7 +110,7 @@
             <li><a href="index.html">Início</a></li>
             <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
             <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
-            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html" style="color: #1a237e; font-weight: bold;">● Ordens Diárias</a></li></ul></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html" style="color: #1a237e; font-weight: bold;">● Ordens Diárias</a></li><li><a href="tipos_servico.html">● Tipos de Serviço</a></li></ul></li>
             <li><a href="escalamento.html">Ativação</a></li>
             <li><a href="historico.html">Histórico de Ativações</a></li>
             <li><a href="mapa_tatico.html">Mapa Tático</a></li>
@@ -155,17 +156,6 @@
             
             <div id="formCabecalho">
                 <div class="row-compact">
-                    <div class="col-compact-sm">
-                        <label>Tipo</label>
-                        <select id="tipoOrdem" class="input-padrao">
-                            <option value="ORDINÁRIA">ORDINÁRIA</option>
-                            <option value="APREV">APREV</option>
-                            <option value="ROTEIRO">ROTEIRO</option>
-                            <option value="EXTRA">EXTRA</option>
-                            <option value="OPERAÇÃO">OPERAÇÃO</option>
-                        </select>
-                    </div>
-
                     <div class="col-compact-lg">
                         <label>Missão (Nome da OS)</label>
                         <input type="text" id="nomeOS" class="input-padrao" placeholder="Ex: Patrulhamento Centro">
@@ -274,8 +264,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h2>Banco de Ordens de Serviço</h2>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ver Ativas</button>
-                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Ver Histórico</button>
+                    <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">OS Ativas</button>
+                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">OS Inativas</button>
                 </div>
             </div>
 
@@ -284,10 +274,10 @@
                     <thead>
                         <tr>
                             <th>Nº OS</th>
-                            <th>Tipo</th>
                             <th>Recurso</th> 
                             <th>Missão</th>
-                            <th>Turno</th> 
+                            <th>Início</th>
+                            <th>Término</th>
                             <th>Detalhes</th>
                             <th style="text-align: center;">Ações</th>
                         </tr>
@@ -299,5 +289,7 @@
     </main>
 
     <script src="os.js"></script>
+    <script src="index_demo_seed.js"></script>
+    <script src="demo_seed_page_button.js"></script>
 </body>
 </html>
