@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Operações Especiais</title>
+    <link rel="icon" href="ordenar.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: #fff;
+            color: #1a237e;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .filter-btn.active {
+            background: #1a237e;
+            color: #fff;
+        }
+
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 15px 0 25px 0;
+        }
+
+        .resumo-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .resumo-card strong {
+            font-size: 1.4rem;
+            color: #1a237e;
+            display: block;
+            line-height: 1.1;
+        }
+
+        .resumo-card span {
+            font-size: 0.82rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .card-operacao {
+            background: #fff;
+            border: 1px solid #ececec;
+            border-left: 5px solid #1a237e;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-operacao.inativa {
+            border-left-color: #dc3545;
+        }
+
+        .card-operacao.com-alerta {
+            border-left-color: #fd7e14 !important;
+            background: #fffaf2;
+        }
+
+        .card-operacao.aberto {
+            border-color: #d9d9d9;
+        }
+
+        .header-op {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            min-height: 40px;
+        }
+
+        .nome-op {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #1a237e;
+            line-height: 1.2;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-expandir {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid #d4d4d4;
+            background: #fff;
+            color: #1a237e;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            margin: 0;
+            padding: 0;
+        }
+
+        .btn-expandir:hover {
+            border-color: #1a237e;
+            background: #f3f5ff;
+        }
+
+        .seta-expansao {
+            display: inline-block;
+            transform: rotate(0deg);
+            transition: transform 0.2s ease;
+        }
+
+        .card-operacao.aberto .seta-expansao {
+            transform: rotate(180deg);
+        }
+
+        .detalhes-op {
+            margin-top: 12px;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        .detalhes-op[hidden] {
+            display: none !important;
+        }
+
+        .meta-criacao {
+            font-size: 0.8rem;
+            color: #777;
+            margin-bottom: 10px;
+        }
+
+        .descricao-op {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+            font-size: 0.92rem;
+            color: #333;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(170px, 1fr));
+            gap: 10px;
+        }
+
+        .meta-item {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .meta-item span {
+            display: block;
+            color: #666;
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .meta-item strong {
+            font-size: 0.92rem;
+            color: #222;
+            word-break: break-word;
+            display: block;
+        }
+
+        .meta-secundaria {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.86rem;
+            color: #555;
+        }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .status-ativa {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inativa {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #8a5600;
+            border: 1px solid #f4d58a;
+        }
+
+        .alertas-gerais {
+            display: none;
+            margin-bottom: 14px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #f4d58a;
+            background: #fff7dc;
+            color: #6e4900;
+        }
+
+        .alertas-gerais.ativo {
+            display: block;
+        }
+
+        .alertas-titulo {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .alertas-lista {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .alertas-lista li {
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .alerta-op {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #f4d58a;
+            background: #fff7dc;
+            color: #6e4900;
+            font-size: 0.9rem;
+        }
+
+        .vazio-msg {
+            text-align: center;
+            color: #666;
+            background: #fafafa;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            padding: 28px;
+        }
+
+        @media (max-width: 860px) {
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .resumo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-op {
+                align-items: center;
+            }
+
+            .header-actions {
+                width: auto;
+            }
+
+            .btn-expandir {
+                width: 34px !important;
+                min-height: 34px !important;
+                height: 34px !important;
+                margin-bottom: 0 !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="storage_normalizer.js"></script>
+    <nav>
+        <div class="logo">ORDENA</div>
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    </nav>
+
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
+        <ul class="sidebar-menu">
+            <li><a href="index.html">Início</a></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
+            <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li><li><a href="tipos_servico.html">● Tipos de Serviço</a></li><li><a href="operacoes_especiais.html" style="color: #1a237e; font-weight: bold;">● Operações Especiais</a></li></ul></li>
+            <li><a href="escalamento.html">Ativação</a></li>
+            <li><a href="historico.html">Histórico de Ativações</a></li>
+            <li><a href="mapa_tatico.html">Mapa Tático</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+        </ul>
+    </div>
+    <script src="menu.js"></script>
+    <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+    <main>
+        <div class="card-container-main">
+            <div style="display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <h2 style="margin-bottom: 0;">Operações Especiais Cadastradas</h2>
+                <a href="os.html" class="btn-primary" style="text-decoration: none; display: inline-flex; align-items: center; padding: 0 14px;">Voltar para OS</a>
+            </div>
+
+            <p style="margin: 8px 0 0 0; color: #666;">
+                Consulta das operações criadas no campo <strong>Vincular Operação</strong> da tela de OS.
+            </p>
+
+            <div class="resumo-grid">
+                <div class="resumo-card">
+                    <strong id="resumoTotal">0</strong>
+                    <span>Total</span>
+                </div>
+                <div class="resumo-card">
+                    <strong id="resumoAtivas">0</strong>
+                    <span>Ativas</span>
+                </div>
+                <div class="resumo-card">
+                    <strong id="resumoInativas">0</strong>
+                    <span>Inativas</span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1a237e;">Listagem</h3>
+                <div class="filter-group">
+                    <button onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active">Ativas</button>
+                    <button onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn">Inativas</button>
+                    <button onclick="mudarFiltro('Todas')" id="btnFiltroTodas" class="filter-btn">Todas</button>
+                </div>
+            </div>
+
+            <div id="painelAlertasOperacoes" class="alertas-gerais"></div>
+            <div id="listaOperacoes"></div>
+        </div>
+    </main>
+
+    <script src="operacoes_especiais.js"></script>
+</body>
+</html>

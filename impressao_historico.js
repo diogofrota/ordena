@@ -23,7 +23,7 @@ function preencherResumo(escala, os) {
     const dataFimTxt = dataFim && !isNaN(dataFim) ? dataFim.toLocaleString('pt-BR') : '-';
 
     const itens = [
-        { label: 'Recurso', value: `${escala.tipoRecurso} ${escala.recursoId}` },
+        { label: 'Recurso', value: escala.recursoId || '-' },
         { label: 'OS Nº', value: escala.osNumero },
         { label: 'Missão', value: escala.osResumo?.nomeOS || os?.nomeOS || '-' },
         { label: 'Turno', value: `${escala.osResumo?.inicioGeral || os?.inicioGeral || '-'} às ${escala.osResumo?.terminoGeral || os?.terminoGeral || '-'}` },
@@ -179,8 +179,6 @@ function renderizarCardsPontos(os) {
                     <div class="card-op">
                         <div><strong>Operação:</strong> ${opNome}</div>
                         ${opInfo && opInfo.descricao ? `<div><strong>Descrição:</strong> ${opInfo.descricao}</div>` : ''}
-                        ${opInfo && opInfo.inicio ? `<div><strong>Início:</strong> ${formatarDataHora(opInfo.inicio)}</div>` : ''}
-                        ${opInfo && opInfo.fim ? `<div><strong>Término:</strong> ${formatarDataHora(opInfo.fim)}</div>` : ''}
                     </div>
                 ` : ''}
                 <div id="${mapId}" class="card-map"></div>

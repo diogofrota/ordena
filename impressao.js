@@ -2,6 +2,75 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarDadosImpressao();
 });
 
+let dadosImpressaoAtual = null;
+const mapasCardsImpressao = [];
+const iconeMarcadorSemSombraImpressao = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: null,
+    shadowSize: null
+});
+
+function aguardarCamadasMapa(mapa, timeoutMs = 1200) {
+    return new Promise((resolve) => {
+        let finalizado = false;
+        let pendentes = 0;
+
+        const finalizar = () => {
+            if (finalizado) return;
+            finalizado = true;
+            resolve();
+        };
+
+        const timeout = setTimeout(finalizar, timeoutMs);
+
+        const concluirSePronto = () => {
+            if (finalizado) return;
+            if (pendentes > 0) return;
+            clearTimeout(timeout);
+            requestAnimationFrame(() => requestAnimationFrame(finalizar));
+        };
+
+        mapa.eachLayer((layer) => {
+            if (typeof layer.isLoading === 'function' && layer.isLoading()) {
+                pendentes += 1;
+                layer.once('load', () => {
+                    pendentes = Math.max(0, pendentes - 1);
+                    concluirSePronto();
+                });
+            }
+        });
+
+        concluirSePronto();
+    });
+}
+
+function estabilizarMapasAntesPdf() {
+    const aguardas = mapasCardsImpressao.map((mapa) => {
+        if (!mapa) return;
+        try {
+            if (typeof mapa.stop === 'function') mapa.stop();
+            mapa.invalidateSize({ pan: false, debounceMoveend: true });
+            const centro = mapa.getCenter();
+            mapa.setView(centro, mapa.getZoom(), { animate: false });
+            mapa.eachLayer((layer) => {
+                if (typeof layer.redraw === 'function') {
+                    layer.redraw();
+                }
+            });
+            return aguardarCamadasMapa(mapa);
+        } catch (e) {
+            console.warn('Falha ao estabilizar mapa para PDF:', e);
+            return Promise.resolve();
+        }
+    });
+    return Promise.all(aguardas)
+        .then(() => new Promise((resolve) => setTimeout(resolve, 180)));
+}
+
 function carregarDadosImpressao() {
     const dados = JSON.parse(localStorage.getItem('osImpressaoTemp'));
 
@@ -10,6 +79,8 @@ function carregarDadosImpressao() {
         window.close();
         return;
     }
+
+    dadosImpressaoAtual = dados;
 
     // --- CABEÇALHO ---
     document.getElementById('numOS').innerText = dados.numero;
@@ -37,13 +108,6 @@ function carregarDadosImpressao() {
         elStatus.innerText += " (ENCERRADA)";
     }
 
-    // --- MAPA ---
-    const map = L.map('mapImpressao', { zoomControl: false }).setView([-22.9068, -43.1729], 12);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© SGF Mapas'
-    }).addTo(map);
-
-    const bounds = []; 
     const tbody = document.getElementById('tabelaAtividades');
 
     // --- LOOP NAS ATIVIDADES ---
@@ -72,29 +136,8 @@ function carregarDadosImpressao() {
         if (ativ.gps && ativ.gps.lat) {
             const lat = parseFloat(ativ.gps.lat);
             const lng = parseFloat(ativ.gps.lng);
-            const ponto = [lat, lng];
-            bounds.push(ponto);
-
             const urlMaps = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
             linkGPS = `<a href="${urlMaps}" target="_blank" class="btn-gps">IR 📍</a>`;
-
-            if (ativ.tipo === 'Patrulhamento') {
-                const raio = ativ.gps.raio ? parseFloat(ativ.gps.raio) : 100;
-                L.circle(ponto, { 
-                    radius: raio, 
-                    color: '#d32f2f',       
-                    fillColor: '#f44336',   
-                    fillOpacity: 0.2,
-                    weight: 2
-                }).addTo(map);
-
-                L.marker(ponto).addTo(map)
-                    .bindPopup(`<b>${ativ.tipo}</b><br>${ativ.local}`);
-            
-            } else if (ativ.tipo === 'Baseamento') {
-                L.marker(ponto).addTo(map)
-                    .bindPopup(`<b>${ativ.tipo}</b><br>${ativ.local}`);
-            }
         }
 
         const temEndereco = (ativ.logradouro && ativ.logradouro !== "-") ||
@@ -113,11 +156,53 @@ function carregarDadosImpressao() {
         `;
     });
 
-    if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [30, 30] });
+    renderizarCardsPontos(dados);
+}
+
+function montarNomeArquivoPdfOS() {
+    const numero = dadosImpressaoAtual && dadosImpressaoAtual.numero ? dadosImpressaoAtual.numero : 'SEM_NUMERO';
+    return `OS_${numero}.pdf`;
+}
+
+function baixarPdfDireto() {
+    const container = document.getElementById('pdfContainer');
+    if (!container) {
+        window.print();
+        return;
     }
 
-    renderizarCardsPontos(dados);
+    if (typeof html2pdf === 'undefined') {
+        alert('Biblioteca de PDF não carregada. Abrindo impressão padrão.');
+        window.print();
+        return;
+    }
+
+    const actions = document.querySelector('.no-print');
+    const nomeArquivo = montarNomeArquivoPdfOS();
+
+    if (actions) actions.style.display = 'none';
+    document.body.classList.add('pdf-download-mode');
+
+    const options = {
+        margin: [0, 0, 0, 0],
+        filename: nomeArquivo,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: -window.scrollY },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], before: '.page-mapas', avoid: ['.card-ponto', '.card-map'] }
+    };
+
+    estabilizarMapasAntesPdf()
+        .then(() => html2pdf().set(options).from(container).save())
+        .catch((err) => {
+            console.error(err);
+            alert('Falha ao gerar PDF automaticamente. Abrindo impressão padrão.');
+            window.print();
+        })
+        .finally(() => {
+            document.body.classList.remove('pdf-download-mode');
+            if (actions) actions.style.display = '';
+        });
 }
 
 function renderizarCardsPontos(dados) {
@@ -173,8 +258,6 @@ function renderizarCardsPontos(dados) {
                     <div class="card-op">
                         <div><strong>Operação:</strong> ${opNome}</div>
                         ${opInfo && opInfo.descricao ? `<div><strong>Descrição:</strong> ${opInfo.descricao}</div>` : ''}
-                        ${opInfo && opInfo.inicio ? `<div><strong>Início:</strong> ${formatarDataHora(opInfo.inicio)}</div>` : ''}
-                        ${opInfo && opInfo.fim ? `<div><strong>Término:</strong> ${formatarDataHora(opInfo.fim)}</div>` : ''}
                     </div>
                 ` : ''}
                 <div id="${mapId}" class="card-map"></div>
@@ -190,8 +273,17 @@ function renderizarCardsPontos(dados) {
             const lng = parseFloat(a.gps.lng);
             if (isNaN(lat) || isNaN(lng)) return;
 
-            const m = L.map(mapId, { zoomControl: false, attributionControl: false })
+            const m = L.map(mapId, {
+                zoomControl: false,
+                attributionControl: false,
+                preferCanvas: true,
+                zoomAnimation: false,
+                fadeAnimation: false,
+                markerZoomAnimation: false
+            })
                 .setView([lat, lng], 15);
+            mapasCardsImpressao.push(m);
+            m.invalidateSize({ pan: false, debounceMoveend: true });
 
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© SGF Mapas'
@@ -206,10 +298,10 @@ function renderizarCardsPontos(dados) {
                     fillOpacity: 0.2,
                     weight: 2
                 }).addTo(m);
-                L.marker([lat, lng]).addTo(m);
-                m.fitBounds(circle.getBounds(), { padding: [10, 10] });
+                L.marker([lat, lng], { icon: iconeMarcadorSemSombraImpressao }).addTo(m);
+                m.fitBounds(circle.getBounds(), { padding: [10, 10], animate: false });
             } else {
-                L.marker([lat, lng]).addTo(m);
+                L.marker([lat, lng], { icon: iconeMarcadorSemSombraImpressao }).addTo(m);
             }
         });
     }, 120);
