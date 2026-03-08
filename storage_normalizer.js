@@ -3,6 +3,7 @@
 
     const VERSION = '1.0.0';
     const LOG_PREFIX = '[ORDENA StorageNormalizer]';
+    const ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN = 30;
 
     const ARRAY_KEYS = [
         'viaturas',
@@ -108,6 +109,95 @@
         let diff = fim - inicio;
         if (diff <= 0) diff += 24 * 60;
         return diff;
+    }
+
+    function normalizarMsNoDia(totalMinutos) {
+        const dia = 24 * 60;
+        return ((totalMinutos % dia) + dia) % dia;
+    }
+
+    function construirDataComOffset(diaBase, diaOffset, minutosNoDia) {
+        const data = new Date(
+            diaBase.getFullYear(),
+            diaBase.getMonth(),
+            diaBase.getDate() + diaOffset,
+            0,
+            0,
+            0,
+            0
+        );
+        const minutosNormalizados = normalizarMsNoDia(minutosNoDia);
+        data.setMinutes(minutosNormalizados);
+        return data;
+    }
+
+    function saoDatasIguaisPorMs(isoA, isoB) {
+        const a = toDateSafe(isoA);
+        const b = toDateSafe(isoB);
+        if (!a || !b) return false;
+        return a.getTime() === b.getTime();
+    }
+
+    function calcularDataFimPrevistaEscala(dataAtivacaoIso, horaInicioServico, horaFimServico, antecedenciaMin) {
+        const dataAtivacao = toDateSafe(dataAtivacaoIso);
+        if (!dataAtivacao) return null;
+
+        const inicioMin = horaParaMinutos(horaInicioServico);
+        const fimMin = horaParaMinutos(horaFimServico);
+        if (!Number.isFinite(inicioMin) || !Number.isFinite(fimMin)) return null;
+
+        const antecedencia = Number.isFinite(antecedenciaMin)
+            ? antecedenciaMin
+            : ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN;
+
+        const diaBase = new Date(
+            dataAtivacao.getFullYear(),
+            dataAtivacao.getMonth(),
+            dataAtivacao.getDate(),
+            0,
+            0,
+            0,
+            0
+        );
+        const ativacaoMs = dataAtivacao.getTime();
+        const candidatos = [];
+
+        for (let offset = -1; offset <= 1; offset++) {
+            const inicio = construirDataComOffset(diaBase, offset, inicioMin);
+            const fim = construirDataComOffset(diaBase, offset, fimMin);
+            if (fimMin <= inicioMin) fim.setDate(fim.getDate() + 1);
+
+            const janelaInicio = new Date(inicio.getTime() - (antecedencia * 60000));
+            const dentroJanela = ativacaoMs >= janelaInicio.getTime() && ativacaoMs <= fim.getTime();
+            if (!dentroJanela) continue;
+
+            candidatos.push({
+                fim,
+                score: Math.abs(fim.getTime() - ativacaoMs)
+            });
+        }
+
+        if (candidatos.length > 0) {
+            candidatos.sort((a, b) => a.score - b.score);
+            return candidatos[0].fim.toISOString();
+        }
+
+        let menorFimFuturo = null;
+        for (let offset = -1; offset <= 2; offset++) {
+            const fim = construirDataComOffset(diaBase, offset, fimMin);
+            const cruzaMeiaNoite = fimMin <= inicioMin;
+            if (cruzaMeiaNoite) fim.setDate(fim.getDate() + 1);
+            if (fim.getTime() < ativacaoMs) continue;
+            if (!menorFimFuturo || fim.getTime() < menorFimFuturo.getTime()) {
+                menorFimFuturo = fim;
+            }
+        }
+
+        if (menorFimFuturo) return menorFimFuturo.toISOString();
+
+        const duracao = calcularDuracaoTurnoMinutos(horaInicioServico, horaFimServico);
+        if (!Number.isFinite(duracao)) return null;
+        return new Date(dataAtivacao.getTime() + (duracao * 60000)).toISOString();
     }
 
     function normalizarMembroEquipe(membro, ctx) {
@@ -289,10 +379,15 @@
             }
         }
 
-        if (!out.dataFimPrevista && dataInicio && Number.isFinite(out.duracaoServicoMinutos)) {
-            out.dataFimPrevista = new Date(
-                dataInicio.getTime() + (out.duracaoServicoMinutos * 60000)
-            ).toISOString();
+        const dataFimPrevistaCalculada = calcularDataFimPrevistaEscala(
+            out.dataInicio,
+            out.horaInicioServico,
+            out.horaFimServico,
+            ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN
+        );
+
+        if (dataFimPrevistaCalculada && !saoDatasIguaisPorMs(out.dataFimPrevista, dataFimPrevistaCalculada)) {
+            out.dataFimPrevista = dataFimPrevistaCalculada;
             markChanged(ctx);
         }
 
@@ -301,8 +396,20 @@
                 out.dataFim = out.dataFim || '';
                 markChanged(ctx);
             }
+            if (typeof out.tipoBaixa !== 'string' && out.tipoBaixa != null) {
+                out.tipoBaixa = String(out.tipoBaixa);
+                markChanged(ctx);
+            }
+            if (typeof out.motivoBaixa !== 'string' && out.motivoBaixa != null) {
+                out.motivoBaixa = String(out.motivoBaixa);
+                markChanged(ctx);
+            }
             if (typeof out.responsavelBaixa !== 'string' && out.responsavelBaixa != null) {
                 out.responsavelBaixa = String(out.responsavelBaixa);
+                markChanged(ctx);
+            }
+            if (typeof out.dataRegistroBaixa !== 'string' && out.dataRegistroBaixa != null) {
+                out.dataRegistroBaixa = String(out.dataRegistroBaixa);
                 markChanged(ctx);
             }
         }
@@ -501,6 +608,103 @@
         return report;
     }
 
+    function carregarEscalasStorage(chave, historico) {
+        const raw = localStorage.getItem(chave);
+        if (raw == null) return { ok: true, list: [], changed: false };
+
+        const parsedResult = parseJsonSafe(chave, raw);
+        if (!parsedResult.ok) return { ok: false, list: [], changed: false };
+        if (!Array.isArray(parsedResult.value)) return { ok: false, list: [], changed: false };
+
+        const ctx = createCtx();
+        const list = parsedResult.value.map(item => normalizarEscala(item, ctx, { historico: !!historico }));
+        return { ok: true, list, changed: !!ctx.changed };
+    }
+
+    function montarRegistroBaixaAutomatica(escala, dataFimIso, dataRegistroIso) {
+        const out = { ...escala };
+        out.dataFim = dataFimIso;
+        out.dataRegistroBaixa = dataRegistroIso;
+        out.baixaAutomatica = true;
+        out.tipoBaixa = 'Automática';
+        out.motivoBaixa = 'Encerramento automático no horário final da OS';
+        out.responsavelBaixa = 'SISTEMA';
+        return out;
+    }
+
+    function processarBaixasAutomaticasEscalas(options) {
+        const opts = {
+            save: true,
+            nowMs: Date.now(),
+            ...(options || {})
+        };
+
+        const ativasInfo = carregarEscalasStorage('escalasAtivas', false);
+        const historicoInfo = carregarEscalasStorage('historicoEscalas', true);
+        if (!ativasInfo.ok || !historicoInfo.ok) {
+            return {
+                changed: false,
+                baixasRealizadas: 0,
+                ativasRestantes: 0,
+                erroLeitura: true
+            };
+        }
+
+        const ativas = ativasInfo.list;
+        const historico = historicoInfo.list;
+        const agoraMs = Number.isFinite(opts.nowMs) ? opts.nowMs : Date.now();
+        const agoraIso = new Date(agoraMs).toISOString();
+
+        let changed = ativasInfo.changed || historicoInfo.changed;
+        let baixasRealizadas = 0;
+        const ativasRestantes = [];
+
+        ativas.forEach((escala) => {
+            const dataFimPrevistaCalculada = calcularDataFimPrevistaEscala(
+                escala.dataInicio,
+                escala.horaInicioServico,
+                escala.horaFimServico,
+                ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN
+            );
+
+            if (dataFimPrevistaCalculada && !saoDatasIguaisPorMs(escala.dataFimPrevista, dataFimPrevistaCalculada)) {
+                escala.dataFimPrevista = dataFimPrevistaCalculada;
+                changed = true;
+            }
+
+            const fimPrevisto = toDateSafe(escala.dataFimPrevista);
+            const fimPrevistoMs = fimPrevisto ? fimPrevisto.getTime() : NaN;
+            const deveEncerrar = Number.isFinite(fimPrevistoMs) && fimPrevistoMs <= agoraMs;
+
+            if (!deveEncerrar) {
+                ativasRestantes.push(escala);
+                return;
+            }
+
+            const dataFimIso = fimPrevisto ? fimPrevisto.toISOString() : agoraIso;
+            const encerrada = montarRegistroBaixaAutomatica(escala, dataFimIso, agoraIso);
+            const jaExiste = historico.some(item => Number(item?.id) === Number(encerrada.id));
+            if (!jaExiste) {
+                historico.push(encerrada);
+                changed = true;
+            }
+            baixasRealizadas++;
+        });
+
+        if (ativasRestantes.length !== ativas.length) changed = true;
+
+        if (changed && opts.save !== false) {
+            localStorage.setItem('escalasAtivas', JSON.stringify(ativasRestantes));
+            localStorage.setItem('historicoEscalas', JSON.stringify(historico));
+        }
+
+        return {
+            changed,
+            baixasRealizadas,
+            ativasRestantes: ativasRestantes.length
+        };
+    }
+
     function exportSnapshot() {
         const snapshot = {};
         for (let i = 0; i < localStorage.length; i++) {
@@ -518,11 +722,14 @@
         version: VERSION,
         runAll,
         normalizeKey,
-        exportSnapshot
+        exportSnapshot,
+        calcularDataFimPrevistaEscala,
+        processarBaixasAutomaticasEscalas
     };
 
     try {
         runAll({ silent: true });
+        processarBaixasAutomaticasEscalas({ save: true });
     } catch (err) {
         console.error(`${LOG_PREFIX} Erro inesperado durante normalização automática.`, err);
     }

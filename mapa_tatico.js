@@ -14,6 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(atualizarMapaTatico, 5000);
 });
 
+function processarBaixasAutomaticasNoMapa() {
+    const api = window.ORDENA_STORAGE_NORMALIZER;
+    if (!api || typeof api.processarBaixasAutomaticasEscalas !== 'function') return false;
+    const resultado = api.processarBaixasAutomaticasEscalas({ save: true });
+    return !!(resultado && resultado.changed);
+}
+
 function iniciarMapa() {
     map = L.map('mapaOperacional', { closePopupOnClick: false }).setView([-22.9068, -43.1729], 12);
 
@@ -30,6 +37,7 @@ function iniciarMapa() {
 }
 
 function atualizarMapaTatico() {
+    processarBaixasAutomaticasNoMapa();
     const escalas = JSON.parse(localStorage.getItem('escalasAtivas')) || [];
     const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];

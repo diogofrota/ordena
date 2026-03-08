@@ -7,6 +7,10 @@ let listaAtividadesTemporaria = [];
 let idEdicaoOS = -1; 
 let statusFiltroAtual = 'Ativa'; 
 
+function osEstaOcultaDaTela(os) {
+    return !!(os && (os.ocultaNaTelaOS === true || os.ocultaNaTelaOS === 'true'));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         carregarOS();
@@ -121,10 +125,14 @@ function carregarSugestoesLocais(tipoSelecionado) {
 // --- FLUXO DE CRIAÇÃO ---
 function liberarFracionamento() {
     const nome = document.getElementById('nomeOS').value;
+    const recurso = document.getElementById('tipoRecursoOS').value;
     const ini = document.getElementById('inicioGeral').value;
     const fim = document.getElementById('terminoGeral').value;
 
-    if(!nome || !ini || !fim) { alert("Preencha Missão e Turno."); return; }
+    if(!recurso || !nome || !ini || !fim) {
+        alert("Preencha Tipo de Patrulhamento, Missão e Turno.");
+        return;
+    }
 
     ['nomeOS', 'inicioGeral', 'terminoGeral', 'tipoRecursoOS'].forEach(id => {
         document.getElementById(id).disabled = true;
@@ -303,7 +311,7 @@ function carregarOS() {
     const tbody = document.getElementById('corpoTabelaOS');
     tbody.innerHTML = '';
 
-    const filtradas = bancoOS.filter(os => os.status === statusFiltroAtual);
+    const filtradas = bancoOS.filter(os => os.status === statusFiltroAtual && !osEstaOcultaDaTela(os));
     filtradas.sort((a,b) => b.numero - a.numero);
 
     filtradas.forEach(os => {
@@ -316,6 +324,13 @@ function carregarOS() {
         }
 
         const tr = document.createElement('tr');
+        const botaoInativar = statusFiltroAtual === 'Ativa'
+            ? `<button onclick="inativarOS(${os.id})" class="btn-secondary" style="padding:6px 10px;">Inativar</button>`
+            : '';
+        const botaoOcultar = statusFiltroAtual === 'Inativa'
+            ? `<button onclick="ocultarOSDaTela(${os.id})" class="btn-danger" style="padding:6px 10px;">Deletar</button>`
+            : '';
+
         tr.innerHTML = `
             <td><strong>${os.numero}</strong></td>
             <td>${os.tipoRecurso}</td>
@@ -330,7 +345,8 @@ function carregarOS() {
             <td style="text-align: center;">
                 <button onclick="copiarParaEditar(${os.id})" class="btn-warning" style="padding:6px 10px;">Editar</button>
                 <button onclick="imprimirOS(${os.id})" class="btn-info" style="padding:6px 10px;">Imprimir</button>
-                ${statusFiltroAtual === 'Ativa' ? `<button onclick="arquivarOS(${os.id})" class="btn-secondary" style="padding:6px 10px;">Arquivar</button>` : ''}
+                ${botaoInativar}
+                ${botaoOcultar}
             </td>
         `;
         tbody.appendChild(tr);
@@ -361,8 +377,8 @@ function copiarParaEditar(id) {
     document.getElementById('btnFinalizar').innerText = "Gerar Nova OS (Baseada na Edição)";
 }
 
-function arquivarOS(id) {
-    if(!confirm("Arquivar esta OS?")) return;
+function inativarOS(id) {
+    if(!confirm("Inativar esta OS?")) return;
     let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const index = bancoOS.findIndex(o => o.id === id);
     if(index !== -1) {
@@ -370,6 +386,23 @@ function arquivarOS(id) {
         localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
         carregarOS();
     }
+}
+
+// Mantido para compatibilidade com chamadas antigas.
+function arquivarOS(id) {
+    inativarOS(id);
+}
+
+function ocultarOSDaTela(id) {
+    if (!confirm("Ocultar esta OS da tela? Ela será mantida no banco de dados.")) return;
+    let bancoOS = JSON.parse(localStorage.getItem('ordensServico')) || [];
+    const index = bancoOS.findIndex(o => o.id === id);
+    if (index === -1) return;
+
+    bancoOS[index].ocultaNaTelaOS = true;
+    bancoOS[index].ocultaEm = new Date().toISOString();
+    localStorage.setItem('ordensServico', JSON.stringify(bancoOS));
+    carregarOS();
 }
 
 function mudarFiltro(status) {
@@ -381,6 +414,7 @@ function mudarFiltro(status) {
 
 function prepararNovoCadastro() {
     document.getElementById('nomeOS').value = '';
+    document.getElementById('tipoRecursoOS').value = '';
     document.getElementById('inicioGeral').value = '';
     document.getElementById('terminoGeral').value = '';
     

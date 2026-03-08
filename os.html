@@ -161,19 +161,20 @@
             
             <div id="formCabecalho">
                 <div class="row-compact">
-                    <div class="col-compact-lg">
-                        <label>Missão (Nome da OS)</label>
-                        <input type="text" id="nomeOS" class="input-padrao" placeholder="Ex: Patrulhamento Centro">
-                    </div>
-                    
                     <div class="col-compact-md">
-                        <label>Recurso</label>
+                        <label>Tipo de Patrulhamento</label>
                         <select id="tipoRecursoOS" class="input-padrao">
+                            <option value="" selected disabled>Selecione...</option>
                             <option value="Viatura">Viatura</option>
                             <option value="Moto">Moto</option>
                             <option value="Cabine">Cabine</option>
                             <option value="Setor">Setor a Pé</option>
                         </select>
+                    </div>
+
+                    <div class="col-compact-lg">
+                        <label>Missão (Nome da OS)</label>
+                        <input type="text" id="nomeOS" class="input-padrao" placeholder="Ex: Patrulhamento Centro">
                     </div>
 
                     <div class="col-compact-sm">

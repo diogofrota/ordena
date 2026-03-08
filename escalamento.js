@@ -20,6 +20,39 @@ const DESPACHANTE = {
 };
 const ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN = 30;
 
+function obterApiAutoEscalas() {
+    return window.ORDENA_STORAGE_NORMALIZER || null;
+}
+
+function calcularDataFimPrevistaEscala(dataAtivacaoIso, horaInicioServico, horaFimServico) {
+    const api = obterApiAutoEscalas();
+    if (api && typeof api.calcularDataFimPrevistaEscala === 'function') {
+        return api.calcularDataFimPrevistaEscala(
+            dataAtivacaoIso,
+            horaInicioServico,
+            horaFimServico,
+            ANTECEDENCIA_PERMITIDA_ATIVACAO_MIN
+        );
+    }
+
+    const dataAtivacao = new Date(dataAtivacaoIso);
+    if (Number.isNaN(dataAtivacao.getTime())) return null;
+    const duracao = calcularDuracaoTurnoMinutos(horaInicioServico, horaFimServico);
+    if (!Number.isFinite(duracao)) return null;
+    return new Date(dataAtivacao.getTime() + (duracao * 60000)).toISOString();
+}
+
+function aplicarMetadadosBaixa(escala, automatico, dataFimIso) {
+    escala.dataFim = dataFimIso || new Date().toISOString();
+    escala.dataRegistroBaixa = new Date().toISOString();
+    escala.baixaAutomatica = !!automatico;
+    escala.tipoBaixa = automatico ? 'Automática' : 'Manual';
+    escala.motivoBaixa = automatico
+        ? 'Encerramento automático no horário final da OS'
+        : 'Encerramento manual realizado pelo operador';
+    escala.responsavelBaixa = automatico ? "SISTEMA" : DESPACHANTE.nome;
+}
+
 function normalizarTextoTipoServico(texto) {
     return (texto || '').toString().trim().toUpperCase();
 }
@@ -141,10 +174,16 @@ function preencherCamposEscala(escala) {
         }
     }
 
-    if (!escala.dataFimPrevista && Number.isFinite(escala.duracaoServicoMinutos)) {
-        escala.dataFimPrevista = new Date(
-            dataInicio.getTime() + (escala.duracaoServicoMinutos * 60000)
-        ).toISOString();
+    const dataFimPrevistaCalculada = calcularDataFimPrevistaEscala(
+        escala.dataInicio,
+        escala.horaInicioServico,
+        escala.horaFimServico
+    );
+    const dataFimAtualMs = escala.dataFimPrevista ? new Date(escala.dataFimPrevista).getTime() : NaN;
+    const dataFimCalculadaMs = dataFimPrevistaCalculada ? new Date(dataFimPrevistaCalculada).getTime() : NaN;
+
+    if (Number.isFinite(dataFimCalculadaMs) && dataFimAtualMs !== dataFimCalculadaMs) {
+        escala.dataFimPrevista = dataFimPrevistaCalculada;
         alterou = true;
     }
 
@@ -152,6 +191,12 @@ function preencherCamposEscala(escala) {
 }
 
 function processarBaixasAutomaticas() {
+    const api = obterApiAutoEscalas();
+    if (api && typeof api.processarBaixasAutomaticasEscalas === 'function') {
+        const resultado = api.processarBaixasAutomaticasEscalas({ save: true });
+        return !!(resultado && resultado.changed);
+    }
+
     let ativas = obterEscalasAtivasPreparadas();
     if (ativas.length === 0) return false;
 
@@ -167,10 +212,9 @@ function processarBaixasAutomaticas() {
         const deveFinalizarAutomatico = Number.isFinite(fimPrevistoMs) && fimPrevistoMs <= agoraMs;
 
         if (deveFinalizarAutomatico) {
-            escala.dataFim = escala.dataFim || escala.dataFimPrevista || new Date().toISOString();
-            escala.baixaAutomatica = true;
-            escala.responsavelBaixa = "SISTEMA";
-            historico.push(escala);
+            aplicarMetadadosBaixa(escala, true, escala.dataFimPrevista || new Date().toISOString());
+            const jaExiste = historico.some(item => Number(item?.id) === Number(escala.id));
+            if (!jaExiste) historico.push(escala);
             houveAlteracao = true;
             return;
         }
@@ -466,9 +510,11 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
     const agora = new Date();
     const dataInicioIso = agora.toISOString();
     const duracaoServicoMinutos = calcularDuracaoTurnoMinutos(os.inicioGeral, os.terminoGeral);
-    const dataFimPrevista = Number.isFinite(duracaoServicoMinutos)
-        ? new Date(agora.getTime() + (duracaoServicoMinutos * 60000)).toISOString()
-        : null;
+    const dataFimPrevista = calcularDataFimPrevistaEscala(
+        dataInicioIso,
+        os.inicioGeral,
+        os.terminoGeral
+    );
     
     const novaEscala = { 
         id: Date.now(), 
@@ -590,10 +636,12 @@ function finalizarTurno(id, automatico = false) {
         const escala = ativas[index];
         if (!automatico && !confirm(`Confirma a baixa de ${escala.recursoId}?`)) return;
         preencherCamposEscala(escala);
-        escala.dataFim = (automatico && escala.dataFimPrevista) ? escala.dataFimPrevista : new Date().toISOString();
-        escala.baixaAutomatica = automatico;
-        escala.responsavelBaixa = automatico ? "SISTEMA" : DESPACHANTE.nome;
-        historico.push(escala);
+        const dataFimIso = (automatico && escala.dataFimPrevista)
+            ? escala.dataFimPrevista
+            : new Date().toISOString();
+        aplicarMetadadosBaixa(escala, automatico, dataFimIso);
+        const jaExiste = historico.some(item => Number(item?.id) === Number(escala.id));
+        if (!jaExiste) historico.push(escala);
         localStorage.setItem('historicoEscalas', JSON.stringify(historico));
         ativas.splice(index, 1);
         localStorage.setItem('escalasAtivas', JSON.stringify(ativas));
