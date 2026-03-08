@@ -6,9 +6,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     atualizarPainelTatico(true);
 
-    const hoje = new Date();
-    document.getElementById('dataHojeDisplay').innerText = hoje.toLocaleDateString('pt-BR');
+    popularTiposPoliciamentoAtivacao();
+    popularRecursosFisicos();
     popularTiposServicoAtivacao();
+    filtrarOSPorRecurso();
 
     setInterval(() => atualizarPainelTatico(false), 10000);
 });
@@ -57,6 +58,36 @@ function normalizarTextoTipoServico(texto) {
     return (texto || '').toString().trim().toUpperCase();
 }
 
+function normalizarTipoPoliciamento(texto) {
+    const t = (texto || '').toString().trim().toLowerCase();
+    if (!t) return '';
+    if (t.includes('moto')) return 'Moto';
+    if (t.includes('cabine')) return 'Cabine';
+    if (t.includes('setor')) return 'Setor';
+    if (t.includes('viatura') || t.includes('carro')) return 'Viatura';
+    return 'Viatura';
+}
+
+function popularTiposPoliciamentoAtivacao() {
+    const selectTipoPoliciamento = document.getElementById('selectTipoPoliciamento');
+    if (!selectTipoPoliciamento) return;
+
+    const valorAtual = normalizarTipoPoliciamento(selectTipoPoliciamento.value);
+    selectTipoPoliciamento.innerHTML = `
+        <option value="">Selecione...</option>
+        <option value="Viatura">Viatura</option>
+        <option value="Moto">Moto</option>
+        <option value="Cabine">Cabine</option>
+        <option value="Setor">Setor a Pé</option>
+    `;
+    selectTipoPoliciamento.disabled = false;
+
+    const valoresPermitidos = ['Viatura', 'Moto', 'Cabine', 'Setor'];
+    if (valorAtual && valoresPermitidos.includes(valorAtual)) {
+        selectTipoPoliciamento.value = valorAtual;
+    }
+}
+
 function obterTiposServicoAtivos() {
     const tipos = JSON.parse(localStorage.getItem('tiposServico')) || [];
     return tipos
@@ -70,19 +101,10 @@ function obterTiposServicoAtivos() {
 
 function popularTiposServicoAtivacao() {
     const selectTipoServico = document.getElementById('selectTipoServico');
-    const selectRecurso = document.getElementById('selectRecurso');
-    if (!selectTipoServico || !selectRecurso) return;
-
-    const recursoSelecionado = !!selectRecurso.value;
+    if (!selectTipoServico) return;
     const valorAtual = normalizarTextoTipoServico(selectTipoServico.value);
 
     selectTipoServico.innerHTML = '';
-
-    if (!recursoSelecionado) {
-        selectTipoServico.disabled = true;
-        selectTipoServico.innerHTML = '<option value="">Selecione o Recurso primeiro...</option>';
-        return;
-    }
 
     const tiposAtivos = obterTiposServicoAtivos();
     if (tiposAtivos.length === 0) {
@@ -92,7 +114,7 @@ function popularTiposServicoAtivacao() {
     }
 
     selectTipoServico.disabled = false;
-    selectTipoServico.innerHTML = '<option value="">Selecione o Tipo de Serviço...</option>';
+    selectTipoServico.innerHTML = '<option value="">Selecione o Serviço...</option>';
 
     tiposAtivos.forEach(tipo => {
         const opt = document.createElement('option');
@@ -107,6 +129,13 @@ function popularTiposServicoAtivacao() {
     }
 }
 
+function aoSelecionarTipoPoliciamento() {
+    // TODO(condicoes-ativacao): reativar bloqueio progressivo entre campos após validação final da estrutura.
+    popularRecursosFisicos();
+    popularTiposServicoAtivacao();
+    filtrarOSPorRecurso();
+}
+
 function aoSelecionarOS() {
     popularTiposServicoAtivacao();
 }
@@ -114,6 +143,7 @@ function aoSelecionarOS() {
 function atualizarPainelTatico(forcarAtualizacaoRecursos = false) {
     const houveBaixaAutomatica = processarBaixasAutomaticas();
     if (forcarAtualizacaoRecursos || houveBaixaAutomatica) {
+        popularTiposPoliciamentoAtivacao();
         popularRecursosFisicos();
     }
     exibirMonitoramento();
@@ -337,7 +367,7 @@ function obterTextoRecursoPainel(escala, placasPorPrefixo) {
     return escala.recursoId || '-';
 }
 
-// --- 1. POPULA OS RECURSOS FÍSICOS (VISUAL: CARRO/MOTO | LÓGICA: VIATURA/MOTO) ---
+// --- 1. POPULA VIATURAS DISPONÍVEIS CONFORME TIPO DE POLICIAMENTO ---
 function popularRecursosFisicos() {
     const viaturas = JSON.parse(localStorage.getItem('viaturas')) || [];
     const cabines = JSON.parse(localStorage.getItem('cabines')) || [];
@@ -345,108 +375,100 @@ function popularRecursosFisicos() {
     const escalasAtivas = obterEscalasAtivasPreparadas();
     
     const selectRecurso = document.getElementById('selectRecurso');
-    selectRecurso.innerHTML = '<option value="">Selecione o Recurso...</option>';
+    if (!selectRecurso) return;
+
+    const valorAtual = selectRecurso.value;
+    selectRecurso.disabled = false;
+    selectRecurso.innerHTML = '<option value="">Selecione a Viatura...</option>';
 
     const recursosEmUso = escalasAtivas.map(e => e.recursoId || e.prefixo);
+    let adicionou = false;
 
-    // FROTA (CARROS E MOTOS)
-    const frotaDisponivel = viaturas.filter(v => v.status === 'Ativa' && !recursosEmUso.includes(v.prefixo));
-    
+    // TODO(condicoes-ativacao): reativar filtro por Tipo de Policiamento ao validar a estrutura final.
+    const frotaDisponivel = viaturas.filter(v => {
+        if (!v || v.status !== 'Ativa') return false;
+        if (recursosEmUso.includes(v.prefixo)) return false;
+        const tipoViatura = normalizarTipoPoliciamento(v.tipo);
+        return tipoViatura === 'Viatura' || tipoViatura === 'Moto';
+    });
+
     if (frotaDisponivel.length > 0) {
         const groupFrota = document.createElement('optgroup');
         groupFrota.label = "Frota Veicular";
-        
-        frotaDisponivel.forEach(v => {
-            let opt = document.createElement('option');
-            opt.value = v.prefixo;
-            
-            // --- LÓGICA INTELIGENTE ---
-            // 1. Tipo Real (Para o Usuário ler): Pega do cadastro (ex: "Carro", "Moto", "Van")
-            let tipoReal = v.tipo || "Viatura"; 
-            
-            // 2. Tipo Lógico (Para o Sistema filtrar):
-            // O Planejamento só conhece "Viatura" e "Moto". 
-            // Então, se for "Carro", "SUV", etc, mapeamos para "Viatura".
-            // Se for "Moto", mapeamos para "Moto".
-            let tipoLogico = "Viatura"; 
-            if (tipoReal.toLowerCase().includes("moto")) {
-                tipoLogico = "Moto";
-            }
 
-            // Salva o tipo lógico no dataset para o filtro funcionar
-            opt.dataset.tipo = tipoLogico; 
-            
-            // Mostra o tipo real no texto
+        frotaDisponivel.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.prefixo;
+            const tipoReal = v.tipo || "Viatura";
+            opt.dataset.tipo = normalizarTipoPoliciamento(tipoReal) || 'Viatura';
             opt.innerHTML = `[${tipoReal}] ${v.prefixo} (${v.placa})`;
-            
             groupFrota.appendChild(opt);
         });
+
         selectRecurso.appendChild(groupFrota);
+        adicionou = true;
     }
 
-    // CABINES
-    const cabinesDisponiveis = cabines.filter(c => c.status === 'Ativa' && !recursosEmUso.includes(c.codigo));
+    const cabinesDisponiveis = cabines.filter(c => c && c.status === 'Ativa' && !recursosEmUso.includes(c.codigo));
     if (cabinesDisponiveis.length > 0) {
         const groupCab = document.createElement('optgroup');
-        groupCab.label = "Cabines Integradas";
+        groupCab.label = "Cabines";
         cabinesDisponiveis.forEach(c => {
-            let opt = document.createElement('option');
+            const opt = document.createElement('option');
             opt.value = c.codigo;
             opt.dataset.tipo = "Cabine";
             opt.innerHTML = `[Cabine] ${c.codigo} - ${c.nome}`;
             groupCab.appendChild(opt);
         });
         selectRecurso.appendChild(groupCab);
+        adicionou = true;
     }
 
-    // SETORES
-    const setoresDisponiveis = setores.filter(s => s.status === 'Ativa' && !recursosEmUso.includes(s.codigo));
+    const setoresDisponiveis = setores.filter(s => s && s.status === 'Ativa' && !recursosEmUso.includes(s.codigo));
     if (setoresDisponiveis.length > 0) {
         const groupSetor = document.createElement('optgroup');
-        groupSetor.label = "Setores (A pé)";
+        groupSetor.label = "Setores a Pé";
         setoresDisponiveis.forEach(s => {
-            let opt = document.createElement('option');
+            const opt = document.createElement('option');
             opt.value = s.codigo;
             opt.dataset.tipo = "Setor";
             opt.innerHTML = `[Setor] ${s.codigo} - ${s.nome}`;
             groupSetor.appendChild(opt);
         });
         selectRecurso.appendChild(groupSetor);
+        adicionou = true;
+    }
+
+    if (!adicionou) {
+        selectRecurso.innerHTML = '<option value="">Nenhum recurso disponível</option>';
+        return;
+    }
+
+    const existeValorAtual = [...selectRecurso.options].some(opt => opt.value === valorAtual);
+    if (valorAtual && existeValorAtual) {
+        selectRecurso.value = valorAtual;
     }
 }
 
 // --- 2. FILTRA OS POR RECURSO ---
 function filtrarOSPorRecurso() {
-    const selectRecurso = document.getElementById('selectRecurso');
     const selectOS = document.getElementById('selectOS');
-    const selectTipoServico = document.getElementById('selectTipoServico');
-
-    selectOS.innerHTML = '<option value="">Selecione...</option>';
-    selectOS.disabled = true;
-    if (selectTipoServico) {
-        selectTipoServico.innerHTML = '<option value="">Selecione o Recurso primeiro...</option>';
-        selectTipoServico.disabled = true;
-    }
-
-    if (!selectRecurso.value) return;
 
     popularTiposServicoAtivacao();
 
-    const tipoRecursoFisico = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo;
     const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const ativas = ordens.filter(o => o.status === 'Ativa');
 
-    const compativeis = ativas.filter(o => normalizarTipoOS(o.tipoRecurso) === tipoRecursoFisico);
+    // TODO(condicoes-ativacao): reativar filtro de OS por recurso/tipo após validação final da estrutura.
+    selectOS.innerHTML = '<option value="">Selecione a OS...</option>';
+    selectOS.disabled = false;
 
-    if (compativeis.length === 0) {
+    if (ativas.length === 0) {
         const opt = document.createElement('option');
-        opt.innerText = `Sem OS de ${tipoRecursoFisico} disponíveis.`;
+        opt.innerText = 'Nenhuma OS ativa disponível.';
         selectOS.appendChild(opt);
     } else {
-        selectOS.disabled = false;
-        selectOS.innerHTML = '<option value="">Selecione a OS...</option>';
-
-        compativeis
+        ativas
             .sort((a, b) => b.numero - a.numero)
             .forEach(os => {
                 const opt = document.createElement('option');
@@ -473,7 +495,7 @@ let contadorIntegrantes = 0; const MAX_INTEGRANTES = 5;
 function adicionarIntegrante() { 
     if (contadorIntegrantes >= MAX_INTEGRANTES) { alert("Máximo de 6 integrantes."); return; } 
     const container = document.getElementById('listaIntegrantes'); const idUnico = Date.now(); const div = document.createElement('div'); div.className = 'box-integrante'; div.id = `integrante-${idUnico}`; 
-    div.innerHTML = `<div class="row-integrante"><div style="flex: 1;"><select name="posto" class="input-padrao" required><option value="SD">SD</option><option value="CB">CB</option><option value="SGT">SGT</option><option value="SUBTEN">SUBTEN</option><option value="ASP">ASP</option><option value="TEN">TEN</option></select></div><div style="flex: 2;"><input type="text" name="nome" class="input-padrao" placeholder="Nome de Guerra" required></div><div style="flex: 1;"><input type="text" name="rg" class="input-padrao" placeholder="RG" required></div></div><button type="button" class="btn-remove" onclick="removerLinhaIntegrante('${idUnico}')">X</button>`; 
+    div.innerHTML = `<div class="row-integrante"><div style="flex: 1;"><select name="posto" class="input-padrao" required><option value="SD">SD</option><option value="CB">CB</option><option value="3SGT">3 SGT</option><option value="2SGT">2 SGT</option><option value="1SGT">1 SGT</option><option value="SUBTEN">SUBTEN</option><option value="ASP">ASP</option><option value="TEN">TEN</option></select></div><div style="flex: 2;"><input type="text" name="nome" class="input-padrao" placeholder="Nome de Guerra" required></div><div style="flex: 1;"><input type="text" name="rg" class="input-padrao" placeholder="RG" required></div></div><button type="button" class="btn-remove" onclick="removerLinhaIntegrante('${idUnico}')">X</button>`; 
     container.appendChild(div); contadorIntegrantes++; 
 }
 function removerLinhaIntegrante(id) { document.getElementById(`integrante-${id}`).remove(); contadorIntegrantes--; }
@@ -482,19 +504,23 @@ function removerLinhaIntegrante(id) { document.getElementById(`integrante-${id}`
 document.getElementById('escalamentoForm').addEventListener('submit', (e) => { 
     e.preventDefault(); 
     
+    const tipoPoliciamentoSelecionado = normalizarTipoPoliciamento(document.getElementById('selectTipoPoliciamento')?.value);
+    if (!tipoPoliciamentoSelecionado) return alert("Selecione o Tipo de Policiamento.");
+
     const selectRecurso = document.getElementById('selectRecurso'); 
     const recursoId = selectRecurso.value; 
+    const optionSelecionada = selectRecurso.options[selectRecurso.selectedIndex] || null;
     // Salva o tipo VISUAL (ex: Carro) para mostrar no painel, mas usa o LÓGICO para consistência se precisar
-    const tipoRecursoLogico = selectRecurso.options[selectRecurso.selectedIndex].dataset.tipo; 
+    const tipoRecursoLogico = optionSelecionada?.dataset?.tipo || tipoPoliciamentoSelecionado; 
     // Pega o texto entre [] do option para salvar o tipo real (ex: Carro)
-    const textoOption = selectRecurso.options[selectRecurso.selectedIndex].text;
+    const textoOption = optionSelecionada?.text || '';
     const matchTipoRecurso = textoOption.match(/\[(.*?)\]/);
     const tipoRecursoReal = (matchTipoRecurso && matchTipoRecurso[1]) || tipoRecursoLogico;
 
     const osNumero = document.getElementById('selectOS').value; 
     if (!osNumero) return alert("Selecione a OS.");
     const tipoServicoSelecionado = normalizarTextoTipoServico(document.getElementById('selectTipoServico').value);
-    if (!tipoServicoSelecionado) return alert("Selecione o Tipo de Serviço.");
+    if (!tipoServicoSelecionado) return alert("Selecione o Serviço.");
 
     const ordens = JSON.parse(localStorage.getItem('ordensServico')) || [];
     const os = ordens.find(o => o.numero.toString() === osNumero.toString());
@@ -521,6 +547,7 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
         dataInicio: dataInicioIso,
         dataAtivacao: agora.toLocaleDateString('pt-BR'),
         horaAtivacao: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        tipoPoliciamento: tipoPoliciamentoSelecionado,
         recursoId: recursoId, 
         tipoRecurso: tipoRecursoReal, // Salva "Carro" ou "Moto" para exibição
         osNumero: os.numero,
@@ -546,12 +573,10 @@ document.getElementById('escalamentoForm').addEventListener('submit', (e) => {
     localStorage.setItem('escalasAtivas', JSON.stringify(escalas)); 
     
     document.getElementById('escalamentoForm').reset(); 
-    const selectOSPosReset = document.getElementById('selectOS');
-    if (selectOSPosReset) {
-        selectOSPosReset.innerHTML = '<option value="">Selecione o Recurso primeiro...</option>';
-        selectOSPosReset.disabled = true;
-    }
+    popularTiposPoliciamentoAtivacao();
+    popularRecursosFisicos();
     popularTiposServicoAtivacao();
+    filtrarOSPorRecurso();
     document.getElementById('listaIntegrantes').innerHTML = ''; 
     contadorIntegrantes = 0; 
     

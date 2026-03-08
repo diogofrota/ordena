@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Layout Geral */
-        .grid-escalamento { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-escalamento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
         .box-integrante { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 5px; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; }
         .btn-add { background-color: #28a745; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
         .btn-remove { background-color: #dc3545; color: white; border: none; padding: 0 12px; height: 42px; border-radius: 5px; cursor: pointer; font-weight: bold; }
@@ -79,7 +79,9 @@
     <div class="sidebar-header"><span>MENU</span><button class="close-btn" onclick="toggleSidebar()">✕</button></div>
     <ul class="sidebar-menu">
         <li><a href="index.html">Início</a></li>
-        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu"><li><a href="cadastro.html">● Viaturas</a></li><li><a href="cabines.html">● Cabines</a></li><li><a href="setores.html">● Setores a Pé</a></li></ul></li>
+        <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Cadastros ▾</a><ul class="submenu">
+                <li><a href="cadastro.html">● Cadastro de Viaturas</a></li>
+            </ul></li>
         <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Locais ▾</a><ul class="submenu"><li><a href="enderecos.html">● Baseamento</a></li><li><a href="patrulhamento.html">● Patrulhamento</a></li></ul></li>
         <li class="has-submenu"><a href="javascript:void(0)" onclick="toggleSubmenu(this)">Ordens Serviços ▾</a><ul class="submenu"><li><a href="os.html">● Ordens Diárias</a></li><li><a href="tipos_servico.html">● Tipos de Serviço</a></li></ul></li>
         <li><a href="escalamento.html">Ativação</a></li>
@@ -97,27 +99,32 @@
         <div class="card-container-main">
             <div style="border-bottom: 2px solid #1a237e; margin-bottom: 20px; padding-bottom: 10px;">
                 <h2 style="margin:0;">Ativação de Guarnição</h2>
-                <div style="margin-top: 5px; font-size: 0.9rem; color: #555;">
-                    Data de Referência: <strong id="dataHojeDisplay" style="color:#d32f2f;">--/--/----</strong>
-                </div>
             </div>
 
             <form id="escalamentoForm">
                 <div class="grid-escalamento" style="margin-bottom: 20px;">
                     <div>
-                        <label>1. Recurso Físico Disponível</label>
-                        <select id="selectRecurso" class="input-padrao" required onchange="filtrarOSPorRecurso()"></select>
+                        <label>1. Tipo de Policiamento</label>
+                        <select id="selectTipoPoliciamento" class="input-padrao" required onchange="aoSelecionarTipoPoliciamento()">
+                            <option value="">Selecione...</option>
+                        </select>
                     </div>
                     <div>
-                        <label>2. Tipo de Serviço</label>
-                        <select id="selectTipoServico" class="input-padrao" required disabled>
-                            <option value="">Selecione o Recurso primeiro...</option>
+                        <label>2. Selecionar Viatura</label>
+                        <select id="selectRecurso" class="input-padrao" onchange="filtrarOSPorRecurso()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>3. Serviço</label>
+                        <select id="selectTipoServico" class="input-padrao" required>
+                            <option value="">Selecione...</option>
                         </select>
                     </div>
                     <div style="grid-column: 1 / -1;">
-                        <label>3. Ordem de Serviço (OS)</label>
-                        <select id="selectOS" class="input-padrao" required disabled onchange="aoSelecionarOS()">
-                            <option value="">Selecione o Recurso primeiro...</option>
+                        <label>4. Ordem de Serviço (OS)</label>
+                        <select id="selectOS" class="input-padrao" required onchange="aoSelecionarOS()">
+                            <option value="">Selecione...</option>
                         </select>
                     </div>
                 </div>
@@ -131,7 +138,7 @@
                             <label>Posto/Grad</label>
                             <select id="postoCmd" class="input-padrao" required>
                                 <option value="">...</option>
-                                <option value="SD">SD</option><option value="CB">CB</option><option value="SGT">SGT</option><option value="SUBTEN">SUBTEN</option><option value="ASP">ASP</option><option value="TEN">TEN</option><option value="CAP">CAP</option><option value="MAJ">MAJ</option><option value="TC">TC</option><option value="CEL">CEL</option>
+                                <option value="SD">SD</option><option value="CB">CB</option><option value="3SGT">3 SGT</option><option value="2SGT">2 SGT</option><option value="1SGT">1 SGT</option><option value="SUBTEN">SUBTEN</option><option value="ASP">ASP</option><option value="TEN">TEN</option><option value="CAP">CAP</option><option value="MAJ">MAJ</option><option value="TC">TC</option><option value="CEL">CEL</option>
                             </select>
                         </div>
                         <div style="flex: 2;">
