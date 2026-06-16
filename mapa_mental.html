@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa Mental - Sistema ORDENA</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #050505;
+      color: #111;
+      overflow-x: auto;
+    }
+
+    .page {
+      min-width: 1900px;
+      padding: 40px 50px 80px;
+    }
+
+    .title {
+      color: #d8e7ff;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 30px;
+    }
+
+    .mindmap {
+      display: inline-block;
+      padding: 20px 20px 20px 0;
+    }
+
+    .mindmap ul {
+      padding-left: 180px;
+      position: relative;
+      margin: 0;
+    }
+
+    .mindmap li {
+      list-style: none;
+      position: relative;
+      margin: 28px 0;
+      min-height: 52px;
+    }
+
+    /* Linha horizontal */
+    .mindmap li::before {
+      content: "";
+      position: absolute;
+      top: 26px;
+      left: -90px;
+      width: 90px;
+      border-top: 3px solid #63b7ff;
+      border-radius: 20px;
+    }
+
+    /* Linha vertical do grupo */
+    .mindmap li::after {
+      content: "";
+      position: absolute;
+      left: -90px;
+      top: -28px;
+      width: 0;
+      height: calc(100% + 56px);
+      border-left: 3px solid #63b7ff;
+    }
+
+    .mindmap li:first-child::after {
+      top: 26px;
+      height: calc(100% + 2px);
+      border-top-left-radius: 20px;
+    }
+
+    .mindmap li:last-child::after {
+      height: 54px;
+      border-bottom-left-radius: 20px;
+    }
+
+    .mindmap > ul > li::before,
+    .mindmap > ul > li::after {
+      display: none;
+    }
+
+    .node {
+      display: inline-block;
+      min-width: 240px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      background: #bcd0f6;
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset;
+      font-size: 20px;
+      line-height: 1.25;
+      vertical-align: middle;
+    }
+
+    .node.root {
+      background: #c1cff8;
+      min-width: 280px;
+      font-weight: 700;
+    }
+
+    .node.level1 {
+      background: #bdd0f3;
+      min-width: 260px;
+      font-weight: 600;
+    }
+
+    .node.level2,
+    .node.level3 {
+      background: #b8e2d9;
+      min-width: 280px;
+    }
+
+    .node.level3 {
+      background: #a9e6bf;
+      min-width: 360px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      margin-left: 10px;
+      border-radius: 50%;
+      background: #b7d7f4;
+      color: #111;
+      font-weight: bold;
+      font-size: 16px;
+      vertical-align: middle;
+    }
+
+    .row {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .subtitle {
+      color: #9bb7dc;
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="title">Diretriz Estratégica e Arquitetura do Sistema ORDENA</div>
+    <div class="subtitle">Mapa mental em HTML</div>
+
+    <div class="mindmap">
+      <ul>
+        <li>
+          <div class="row">
+            <div class="node root">Sistema ORDENA</div>
+            <span class="badge">&lt;</span>
+          </div>
+
+          <ul>
+            <!-- Problemas Resolvidos -->
+            <li>
+              <div class="row">
+                <div class="node level1">Problemas Resolvidos</div>
+                <span class="badge">&lt;</span>
+              </div>
+              <ul>
+                <li><div class="node level2">Gestão fragmentada e manual</div></li>
+                <li><div class="node level2">Baixa integração e rastreabilidade</div></li>
+                <li><div class="node level2">Dependência de supervisão presencial</div></li>
+                <li><div class="node level2">Informação dispersa em papel/planilhas</div></li>
+              </ul>
+            </li>
+
+            <!-- Funcionalidades Atuais -->
+            <li>
+              <div class="row">
+                <div class="node level1">Funcionalidades Atuais</div>
+                <span class="badge">&lt;</span>
+              </div>
+              <ul>
+                <li>
+                  <div class="row">
+                    <div class="node level2">Gestão de Recursos</div>
+                    <span class="badge">&lt;</span>
+                  </div>
+                  <ul>
+                    <li><div class="node level3">Cadastro de viaturas e equipes</div></li>
+                    <li><div class="node level3">Pontos de baseamento georreferenciados</div></li>
+                    <li><div class="node level3">Setores e cabines de policiamento</div></li>
+                  </ul>
+                </li>
+
+                <li>
+                  <div class="row">
+                    <div class="node level2">Planejamento e Execução</div>
+                    <span class="badge">&lt;</span>
+                  </div>
+                  <ul>
+                    <li><div class="node level3">Criação de Ordens de Serviço (OS)</div></li>
+                    <li><div class="node level3">Ativação de guarnições</div></li>
+                    <li><div class="node level3">Catálogo de operações especiais</div></li>
+                    <li><div class="node level3">Baixa manual e automática</div></li>
+                  </ul>
+                </li>
+
+                <li>
+                  <div class="row">
+                    <div class="node level2">Monitoramento e Controle</div>
+                    <span class="badge">&lt;</span>
+                  </div>
+                  <ul>
+                    <li><div class="node level3">Painel tático em tempo real</div></li>
+                    <li><div class="node level3">Mapa tático com áreas de patrulhamento</div></li>
+                    <li><div class="node level3">Histórico estruturado de ações</div></li>
+                    <li><div class="node level3">Dashboard de KPIs e gráficos</div></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+
+            <!-- Valor Estratégico -->
+            <li>
+              <div class="row">
+                <div class="node level1">Valor Estratégico</div>
+                <span class="badge">&lt;</span>
+              </div>
+              <ul>
+                <li><div class="node level2">Governança e transparência</div></li>
+                <li><div class="node level2">Redução de custos operacionais</div></li>
+                <li><div class="node level2">Apoio à tomada de decisão tática</div></li>
+                <li><div class="node level2">Padronização do fluxo de trabalho</div></li>
+                <li><div class="node level2">Aumento da produtividade real</div></li>
+              </ul>
+            </li>
+
+            <!-- Estrutura Técnica -->
+            <li>
+              <div class="row">
+                <div class="node level1">Estrutura Técnica</div>
+                <span class="badge">&lt;</span>
+              </div>
+              <ul>
+                <li><div class="node level2">Frontend puro (HTML/CSS/JS)</div></li>
+                <li><div class="node level2">Persistência em localStorage</div></li>
+                <li><div class="node level2">Normalizador de storage</div></li>
+                <li><div class="node level2">Geração de relatórios PDF</div></li>
+              </ul>
+            </li>
+
+            <!-- Próximos Passos -->
+            <li>
+              <div class="row">
+                <div class="node level1">Próximos Passos</div>
+                <span class="badge">&lt;</span>
+              </div>
+              <ul>
+                <li><div class="node level2">Implementação de Backend e API</div></li>
+                <li><div class="node level2">Integração com GPS/Telemetria real</div></li>
+                <li><div class="node level2">Módulo de manchas criminais (ocorrências)</div></li>
+                <li><div class="node level2">Autenticação e trilha de auditoria</div></li>
+                <li><div class="node level2">Análise de correlação e efetividade</div></li>
+              </ul>
+            </li>
+
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
