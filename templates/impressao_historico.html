@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Impressão de Término da Ativação</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #eee;
+            color: #333;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 10mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .page + .page { margin-top: 20px; }
+        .header { border-bottom: 3px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        .header-identidade { width: 100%; min-width: 0; }
+        .header-instituicao { font-size: 22px; line-height: 1.2; font-weight: 800; color: #1a237e; text-transform: uppercase; letter-spacing: 0.7px; overflow-wrap: anywhere; }
+        .header-orgao { margin-top: 3px; font-size: 12px; line-height: 1.25; font-weight: 600; color: #555; overflow-wrap: anywhere; }
+
+        .title { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #1a237e; text-transform: uppercase; background: #f4f6f9; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; font-size: 12px; border: 1px solid #ddd; padding: 10px; border-radius: 6px; }
+        .grid-item strong { color: #1a237e; display: block; font-size: 10px; text-transform: uppercase; margin-bottom: 2px; }
+        .grid-item span { font-size: 13px; font-weight: 500; }
+        .grid-item-full { grid-column: 1 / -1; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #1a237e; color: white; text-transform: uppercase; font-size: 10px; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .section-title { font-size: 13px; font-weight: bold; color: #1a237e; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 8px; text-transform: uppercase; }
+        .prescricoes {
+            border: 1px solid #eee;
+            background: #fcfcfc;
+            padding: 10px;
+            font-size: 11px;
+            margin-bottom: 15px;
+            min-height: 50px;
+            white-space: pre-wrap;
+            border-radius: 4px;
+            break-inside: avoid;
+        }
+        .cards-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .card-ponto { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; break-inside: avoid; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .badge-tipo { background: #1a237e; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .card-title { font-size: 12px; font-weight: bold; color: #333; }
+        .card-meta { font-size: 10px; color: #555; line-height: 1.4; }
+        .card-op { margin-top: 6px; padding: 6px; border-radius: 4px; background: #e3f2fd; border: 1px solid #bbdefb; font-size: 10px; color: #0d47a1; }
+        .card-map { width: 100%; height: 160px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px; }
+
+        .card-conf { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; break-inside: avoid; }
+        .conf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .conf-badge { background: #28a745; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .conf-meta { font-size: 10px; color: #555; line-height: 1.4; }
+        .conf-note { margin-top: 6px; font-size: 10px; color: #777; }
+
+        .no-print { text-align: center; margin-bottom: 20px; position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .btn-print { padding: 12px 25px; font-size: 16px; background: #1a237e; color: white; border: none; cursor: pointer; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-weight: bold; transition: transform 0.2s; }
+        .btn-print:hover { transform: scale(1.05); background: #283593; }
+
+        @media print {
+            @page { size: A4; margin: 10mm; }
+            body { background: white; margin: 0; padding: 0; }
+            .no-print { display: none; }
+            .page { box-shadow: none; width: 100%; margin: 0; padding: 0; min-height: auto; }
+            th { background-color: #eee !important; color: #000 !important; border-bottom: 1px solid #000; }
+            .title { background: none; border: 1px solid #000; color: #000; }
+            .header { border-bottom: 2px solid #000; }
+            .card-ponto { background: #fff; border: 1px solid #000; }
+            .card-conf { background: #fff; border: 1px solid #000; }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+
+    <div class="page">
+        <div class="header">
+            <div class="header-identidade">
+                <div class="header-instituicao" data-perfil-instituicao>Prefeitura Municipal de Demonstração</div>
+                <div class="header-orgao" data-perfil-orgao>Secretaria de Segurança Pública</div>
+            </div>
+        </div>
+
+        <div class="title">TÉRMINO DA ATIVAÇÃO</div>
+
+        <div class="grid" id="resumoHistorico"></div>
+
+        <div class="section-title">Equipe Vinculada</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Função</th>
+                    <th>Posto/Grad</th>
+                    <th>Nome de Guerra</th>
+                    <th>RG</th>
+                    <th data-coluna-moto-equipe hidden>Moto</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaEquipe"></tbody>
+        </table>
+
+        <div class="section-title">Roteiro da OS</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Horário</th>
+                    <th style="width: 20%;">Atividade</th>
+                    <th style="width: 40%;">Local / Endereço</th>
+                    <th style="width: 15%;">Operação</th>
+                    <th style="width: 10%; text-align: center;">Rota</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaOS"></tbody>
+        </table>
+
+        <div class="section-title">Observações Gerais / Prescrições</div>
+        <div class="prescricoes" id="txtPrescricoesHistorico"></div>
+    </div>
+
+    <div class="page">
+        <div class="header">
+            <div class="header-identidade">
+                <div class="header-instituicao" data-perfil-instituicao>Prefeitura Municipal de Demonstração</div>
+                <div class="header-orgao" data-perfil-orgao>Secretaria de Segurança Pública</div>
+            </div>
+        </div>
+
+        <div class="title">MAPAS DE PONTOS (BASEAMENTO / PATRULHAMENTO)</div>
+        <div class="section-title">Pontos com GPS Configurado</div>
+        <div id="cardsPontosHistorico" class="cards-grid"></div>
+    </div>
+
+    <div class="page">
+        <div class="header">
+            <div class="header-identidade">
+                <div class="header-instituicao" data-perfil-instituicao>Prefeitura Municipal de Demonstração</div>
+                <div class="header-orgao" data-perfil-orgao>Secretaria de Segurança Pública</div>
+            </div>
+        </div>
+
+        <div class="title">CONFERÊNCIA DE POSIÇÃO (EXEMPLO)</div>
+        <div class="section-title">Baseamento / Patrulhamento (Simulação)</div>
+        <div id="cardsConferenciaHistorico" class="cards-grid"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="../js/cabecalho_impressao.js"></script>
+    <script src="../js/impressao_historico.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => window.print(), 400);
+        });
+    </script>
+</body>
+</html>

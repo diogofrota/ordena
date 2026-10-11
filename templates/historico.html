@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Histórico</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .historico-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .historico-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .historico-list-header h2 { margin: 0; }
+        .historico-subtitulo {
+            color: #666;
+            margin: 4px 0 0;
+        }
+        .historico-list-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .page-feedback {
+            display: none;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        .page-feedback.is-visible { display: block; }
+        .page-feedback.error { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
+
+        table td { vertical-align: middle; padding: 12px 10px; }
+        .tabela-monitoramento {
+            min-width: 1080px;
+            table-layout: fixed;
+        }
+        .tabela-monitoramento th {
+            padding: 13px 10px;
+            font-size: 0.78rem;
+            line-height: 1.15;
+            white-space: normal;
+        }
+        .tabela-monitoramento td {
+            padding: 14px 10px;
+            font-size: 0.86rem;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .tabela-monitoramento .col-painel-data { width: 8%; }
+        .tabela-monitoramento .col-painel-recurso { width: 11%; }
+        .tabela-monitoramento .col-painel-comandante { width: 10.5%; }
+        .tabela-monitoramento .col-painel-auxiliares { width: 14%; }
+        .tabela-monitoramento .col-painel-os { width: 5.5%; }
+        .tabela-monitoramento .col-painel-servico { width: 9.5%; }
+        .tabela-monitoramento .col-painel-missao { width: 11.5%; }
+        .tabela-monitoramento .col-painel-inicio { width: 7%; }
+        .tabela-monitoramento .col-painel-fim { width: 7%; }
+        .tabela-monitoramento .col-painel-baixa { width: 10%; }
+        .tabela-monitoramento .col-painel-acoes { width: 6%; }
+        .tabela-monitoramento td[data-label="Data"],
+        .tabela-monitoramento td[data-label="OS"],
+        .tabela-monitoramento td[data-label="Hora Início"],
+        .tabela-monitoramento td[data-label="Hora Fim"] {
+            white-space: nowrap;
+        }
+        .auxiliares-lista {
+            display: grid;
+            gap: 3px;
+        }
+        .auxiliar-item { display: block; }
+        .baixa-detalhes {
+            display: grid;
+            gap: 1px;
+        }
+        .baixa-detalhes small { display: block; }
+        .tabela-monitoramento .acoes-inline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 6px;
+        }
+        .tabela-monitoramento .acoes-inline button {
+            width: auto;
+            min-width: 0;
+            height: 36px;
+            margin: 0;
+            padding: 0 10px;
+            font-size: 0.76rem;
+            white-space: nowrap;
+        }
+        .linha-mensagem[hidden] { display: none !important; }
+
+        @media (max-width: 768px) {
+            .historico-container { padding: 20px; }
+            .historico-list-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .historico-list-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+            .historico-list-actions button {
+                width: 100% !important;
+                margin-bottom: 0 !important;
+            }
+            .tabela-monitoramento {
+                min-width: 100%;
+                table-layout: auto;
+            }
+            .tabela-monitoramento .auxiliares-lista {
+                justify-items: end;
+                text-align: right;
+            }
+            .tabela-monitoramento .baixa-detalhes {
+                justify-items: end;
+                min-width: 0;
+                text-align: right;
+            }
+            .tabela-monitoramento td[data-label="Ações"] {
+                padding-left: 10px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .tabela-monitoramento td[data-label="Ações"]::before {
+                position: static;
+                width: 100%;
+            }
+            .tabela-monitoramento .acoes-inline {
+                display: grid;
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+            .tabela-monitoramento .acoes-inline button {
+                width: 100% !important;
+                margin-bottom: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<script src="../js/menu.js"></script>
+
+    <main>
+        <div class="historico-container">
+            <div class="historico-list-header">
+                <div>
+                    <h2>Histórico de Ativações - Serviços Baixados</h2>
+                    <p class="historico-subtitulo">
+                        Serviços encerrados pelo botão Baixa no Painel Tático, do mais recente para o mais antigo.
+                    </p>
+                </div>
+                <div class="historico-list-actions" role="navigation" aria-label="Navegação do histórico de ativações">
+                    <button type="button" class="filter-btn" onclick="window.location.href='escalamento.html'">Painel Tático</button>
+                </div>
+            </div>
+
+            <div id="feedbackHistorico" class="page-feedback" aria-live="polite"></div>
+
+            <div class="table-responsive">
+                <table id="tabelaHistorico" class="tabela-monitoramento">
+                    <colgroup>
+                        <col class="col-painel-data">
+                        <col class="col-painel-recurso">
+                        <col class="col-painel-comandante">
+                        <col class="col-painel-auxiliares">
+                        <col class="col-painel-os">
+                        <col class="col-painel-servico">
+                        <col class="col-painel-missao">
+                        <col class="col-painel-inicio">
+                        <col class="col-painel-fim">
+                        <col class="col-painel-baixa">
+                        <col class="col-painel-acoes">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Recurso</th>
+                            <th scope="col">Comandante</th>
+                            <th scope="col">Auxiliares</th>
+                            <th scope="col">OS</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Missão</th>
+                            <th scope="col">Hora Início</th>
+                            <th scope="col">Hora Fim</th>
+                            <th scope="col">Data da Baixa</th>
+                            <th scope="col" style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaHistorico"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/historico.js"></script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Estilos existentes */
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #1a237e;
+            color: white;
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.18);
+        }
+        .cadastro-link {
+            background-color: white;
+            border-color: #3f7f50;
+            border-radius: 20px;
+            color: #3f7f50;
+        }
+        .cadastro-link.active {
+            background-color: #3f7f50;
+            border-color: #3f7f50;
+            color: white;
+        }
+        .filter-btn-inativa {
+            border-color: #a45f5f;
+            color: #a45f5f;
+        }
+        .filter-btn-inativa.active {
+            background: #a45f5f;
+            border-color: #a45f5f;
+            color: white;
+        }
+        .btn-voltar-viatura {
+            background: white;
+            border: 1px solid #6c757d;
+            border-radius: 20px;
+            box-shadow: none;
+            color: #6c757d;
+            min-width: 84px;
+        }
+        .cadastro-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .cadastro-list-header h2 {
+            margin: 0;
+        }
+        .cadastro-list-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .acoes-viatura {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .status-ativa { background: #d4edda; color: #155724; }
+        .status-inativa { background: #f8d7da; color: #721c24; }
+
+        @media (max-width: 768px) {
+            .cadastro-list-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .cadastro-list-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+            .cadastro-list-actions .cadastro-link {
+                grid-column: 1 / -1;
+            }
+            .cadastro-list-actions .btn-voltar-viatura {
+                grid-column: 1 / -1;
+            }
+            .cadastro-list-actions button {
+                margin-bottom: 0 !important;
+            }
+            .acoes-viatura {
+                width: 100%;
+            }
+            .acoes-viatura button {
+                width: auto !important;
+                min-width: 110px;
+                margin-bottom: 0 !important;
+                padding: 0 18px !important;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cadastro-list-actions {
+                grid-template-columns: 1fr;
+            }
+            .cadastro-list-actions .cadastro-link {
+                grid-column: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">
+        ORDENA 
+    </div>
+    
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">
+        ☰
+    </button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<script src="../js/menu.js"></script>
+
+    <main>
+        <div class="card-container-main">
+            <div class="cadastro-list-header">
+                <h2>Cadastradas</h2>
+
+                <div class="cadastro-list-actions">
+                    <button type="button" class="filter-btn cadastro-link" onclick="window.location.href='cadastro_viatura.html'">Cadastrar</button>
+                    <button type="button" onclick="mudarFiltro('Ativa')" id="btnFiltroAtiva" class="filter-btn active" aria-pressed="true">Ativas</button>
+                    <button type="button" onclick="mudarFiltro('Inativa')" id="btnFiltroInativa" class="filter-btn filter-btn-inativa" aria-pressed="false">Baixadas</button>
+                    <button type="button" class="btn-voltar-viatura" onclick="window.location.href='index.html'">Home</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Modelo</th>
+                            <th>Prefixo</th>
+                            <th>Placa</th>
+                            <th>Rádio</th>
+                            <th>Status</th>
+                            <th style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaViaturas"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/script.js"></script>
+</body>
+</html>

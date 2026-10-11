@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Ativação</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* Layout Geral */
+        .grid-escalamento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+
+        .page-feedback {
+            display: none;
+            padding: 12px 15px;
+            margin-bottom: 18px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        .page-feedback.is-visible { display: block; }
+        .page-feedback.success { color: #155724; background: #d4edda; border-color: #c3e6cb; }
+        .page-feedback.error { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
+        .page-feedback.info { color: #0c5460; background: #d1ecf1; border-color: #bee5eb; }
+        .campo-ajuda {
+            display: block;
+            min-height: 20px;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.82rem;
+        }
+        #selectRecurso[multiple] {
+            min-height: 116px;
+            padding: 5px;
+        }
+        #selectRecurso[multiple] option { padding: 7px 9px; }
+        #selectRecurso:disabled {
+            background-color: #f1f3f5;
+            border-color: #d7dce1;
+            color: #777;
+            -webkit-text-fill-color: #777;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+        #escalamentoForm.is-processing {
+            cursor: progress;
+        }
+        #escalamentoForm.is-processing select,
+        #escalamentoForm.is-processing input,
+        #escalamentoForm.is-processing button:not(#btnAtivarGuarnicao) {
+            pointer-events: none;
+        }
+
+        .visualizacao-ativacao[hidden] { display: none !important; }
+        .ativacao-form-header,
+        .ativacao-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .ativacao-form-header h2,
+        .ativacao-list-header h2 { margin: 0; }
+        .ativacao-form-actions,
+        .ativacao-list-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .filter-btn.active { background: #1a237e; color: white; }
+        .cadastro-link {
+            background: white;
+            border-color: #3f7f50;
+            color: #3f7f50;
+        }
+        .cadastro-link:hover,
+        .cadastro-link:focus-visible,
+        .cadastro-link.active {
+            background: #3f7f50;
+            border-color: #3f7f50;
+            color: white;
+        }
+        .ativacao-status-atual {
+            display: inline-flex;
+            min-height: var(--input-height);
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+        }
+        .btn-voltar-painel {
+            background: #6c757d;
+            border: 1px solid #6c757d;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.14);
+            color: white;
+        }
+        .equipe-cabecalho { margin-bottom: 10px; }
+        .equipe-cabecalho h3 { font-size: 1.1rem; margin-bottom: 2px; }
+        .equipe-cabecalho p { margin: 0; color: #666; font-size: 0.9rem; }
+        .equipe-cabecalho a { color: #1a237e; font-weight: 700; }
+        .equipe-lista {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .equipe-lista .table-responsive { border: 0; border-radius: 0; }
+        .tabela-equipe { min-width: 1000px; table-layout: fixed; }
+        .tabela-equipe .col-funcao { width: 10%; }
+        .tabela-equipe .col-rg { width: 28%; }
+        .tabela-equipe .col-nome { width: 13%; }
+        .tabela-equipe .col-posto { width: 10%; }
+        .tabela-equipe .col-telefone { width: 13%; }
+        .tabela-equipe .col-moto { width: 16%; }
+        .tabela-equipe .col-acoes { width: 10%; }
+        .tabela-equipe td { vertical-align: middle; }
+        .tabela-equipe .equipe-editor td {
+            padding: 12px 10px 15px;
+            vertical-align: bottom;
+            background-color: #fff;
+            border-bottom: 0;
+        }
+        .equipe-editor label,
+        .equipe-editor-label {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .equipe-funcao-badge {
+            display: inline-flex;
+            min-height: var(--input-height);
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 5px;
+            background: #eef0fb;
+            color: #1a237e;
+            font-weight: 700;
+        }
+        .equipe-editor .input-padrao[readonly] {
+            background: #f1f3f5;
+            color: #555;
+            cursor: default;
+        }
+        .equipe-busca-rg {
+            display: flex;
+            align-items: stretch;
+            flex-wrap: wrap;
+            gap: 6px;
+            width: 100%;
+        }
+        .equipe-busca-rg > .input-padrao {
+            min-width: 80px;
+            flex: 1 1 110px;
+        }
+        .equipe-acoes { display: grid; gap: 5px; width: 100%; }
+        .equipe-editor-acoes {
+            display: flex;
+            flex: 0 1 auto;
+            gap: 5px;
+        }
+        .equipe-acoes { grid-template-columns: 1fr; }
+        .equipe-acoes.com-remocao,
+        .equipe-editor-acoes.em-edicao,
+        .equipe-editor-acoes.com-cancelamento { flex-wrap: wrap; }
+        .equipe-acoes button,
+        .equipe-editor-acoes button {
+            width: auto;
+            min-width: 0;
+            height: var(--input-height);
+            margin: 0;
+            padding: 0 10px;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .equipe-editor-acoes .btn-cadastrar-policial {
+            color: #1a237e;
+            background: #fff;
+            border: 1px solid #1a237e;
+        }
+        .equipe-editor-acoes .btn-cadastrar-policial:hover,
+        .equipe-editor-acoes .btn-cadastrar-policial:focus-visible {
+            color: #fff;
+            background: #1a237e;
+            filter: none;
+        }
+        .equipe-editor-acoes [hidden],
+        .coluna-moto-equipe[hidden] { display: none !important; }
+        .equipe-linha-em-edicao td { background-color: #fff8e1; }
+        .equipe-editor.equipe-em-edicao td { background-color: #fff8e1; }
+        .equipe-resumo { display: block; margin-top: 8px; color: #666; font-size: 0.85rem; }
+        #btnAtivarGuarnicao {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+        }
+        #btnAtivarGuarnicao:disabled { cursor: wait; opacity: 0.75; }
+        #btnAtivarGuarnicao .growing-dots,
+        #btnAdicionarMembro .growing-dots,
+        #btnSalvarCadastroPolicial .growing-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        #btnAtivarGuarnicao .growing-dots[hidden],
+        #btnAdicionarMembro .growing-dots[hidden],
+        #btnSalvarCadastroPolicial .growing-dots[hidden] { display: none; }
+        #btnAtivarGuarnicao .growing-dots span,
+        #btnAdicionarMembro .growing-dots span,
+        #btnSalvarCadastroPolicial .growing-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: ativacao-dot-grow 1.2s infinite ease-in-out;
+        }
+        .growing-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .growing-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes ativacao-dot-grow {
+            0%, 60%, 100% { transform: scale(0.65); opacity: 0.45; }
+            30% { transform: scale(1); opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #btnAtivarGuarnicao .growing-dots span,
+            #btnAdicionarMembro .growing-dots span,
+            #btnSalvarCadastroPolicial .growing-dots span {
+                animation: none;
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .tabela-equipe .equipe-editor td { vertical-align: middle; }
+            .tabela-equipe .equipe-editor .equipe-campo-detalhe-oculto,
+            .tabela-equipe .equipe-editor .equipe-campo-acoes { display: table-cell; }
+            .equipe-busca-rg { flex-wrap: wrap; align-items: center; }
+            .equipe-busca-rg > .input-padrao {
+                width: 100px;
+                min-width: 100px;
+                flex: 0 0 100px;
+            }
+            .equipe-editor-acoes,
+            .equipe-editor-acoes.em-edicao,
+            .equipe-editor-acoes.com-cancelamento {
+                /* Antes, flex: 1 1 260px reservava espaço mesmo com só dois botões. */
+                display: contents;
+            }
+            .equipe-editor-acoes button {
+                flex: 0 0 auto;
+            }
+        }
+
+        /* Layout anterior preservado: o editor ocupava RG, nome, posto e telefone.
+        @media (min-width: 769px) {
+            .tabela-equipe .equipe-editor td { vertical-align: middle; }
+            .tabela-equipe .equipe-editor .equipe-campo-detalhe-oculto,
+            .tabela-equipe .equipe-editor .equipe-campo-acoes { display: none; }
+            .equipe-busca-rg { flex-wrap: nowrap; }
+            .equipe-busca-rg > .input-padrao {
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+            .equipe-editor-acoes,
+            .equipe-editor-acoes.em-edicao,
+            .equipe-editor-acoes.com-cancelamento {
+                flex: 0 0 auto;
+                flex-wrap: nowrap;
+            }
+        }
+        */
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.55);
+        }
+        .modal-overlay[hidden] { display: none !important; }
+        .modal-card {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 24px;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+        .modal-card h3 { margin: 0 45px 4px 0; color: #1a237e; }
+        .modal-description { margin: 0 0 18px; color: #666; font-size: 0.9rem; }
+        .modal-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            width: 44px;
+            min-width: 44px;
+            height: 44px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #333;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .modal-actions button { margin: 0; }
+        .modal-card .page-feedback { margin-bottom: 15px; }
+        .campo-obrigatorio { color: #b42318; }
+        body.modal-aberto { overflow: hidden; }
+        
+        /* --- PAINEL TÁTICO --- */
+        .container-full-width {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        table td { vertical-align: middle; padding: 12px 10px; }
+        .tabela-monitoramento {
+            min-width: 1180px;
+            table-layout: fixed;
+        }
+        .tabela-monitoramento th {
+            padding: 12px 6px;
+            font-size: 0.74rem;
+            line-height: 1.15;
+            white-space: normal;
+        }
+        .tabela-monitoramento td {
+            padding: 12px 7px;
+            font-size: 0.82rem;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .tabela-monitoramento .col-painel-data { width: 8%; }
+        .tabela-monitoramento .col-painel-recurso { width: 11%; }
+        .tabela-monitoramento .col-painel-comandante { width: 9.5%; }
+        .tabela-monitoramento .col-painel-telefone { width: 9.5%; }
+        .tabela-monitoramento .col-painel-auxiliares { width: 13%; }
+        .tabela-monitoramento .col-painel-os { width: 5%; }
+        .tabela-monitoramento .col-painel-servico { width: 10%; }
+        .tabela-monitoramento .col-painel-missao { width: 10%; }
+        .tabela-monitoramento .col-painel-inicio { width: 7%; }
+        .tabela-monitoramento .col-painel-fim { width: 7%; }
+        .tabela-monitoramento .col-painel-acoes { width: 10%; }
+        .tabela-monitoramento td[data-label="Data Ativação"],
+        .tabela-monitoramento td[data-label="Telefone"],
+        .tabela-monitoramento td[data-label="OS"],
+        .tabela-monitoramento td[data-label="Hora Início"],
+        .tabela-monitoramento td[data-label="Hora Fim"] {
+            white-space: nowrap;
+        }
+        .auxiliares-lista {
+            display: grid;
+            gap: 3px;
+        }
+        .auxiliar-item { display: block; }
+        .tabela-monitoramento .acoes-inline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 6px;
+        }
+        .tabela-monitoramento .acoes-inline button {
+            width: auto;
+            min-width: 0;
+            height: 36px;
+            margin: 0;
+            padding: 0 10px;
+            font-size: 0.76rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-escalamento { grid-template-columns: 1fr !important; }
+            .container-full-width { padding: 20px; }
+            .tabela-monitoramento {
+                min-width: 100%;
+                table-layout: auto;
+            }
+            .tabela-monitoramento .auxiliares-lista {
+                justify-items: end;
+                text-align: right;
+            }
+            .tabela-monitoramento td[data-label="Ações"] {
+                padding-left: 10px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .tabela-monitoramento td[data-label="Ações"]::before {
+                position: static;
+                width: 100%;
+            }
+            .tabela-monitoramento .acoes-inline {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+            .tabela-monitoramento .acoes-inline button {
+                width: 100% !important;
+            }
+            .ativacao-form-header,
+            .ativacao-list-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .ativacao-form-actions,
+            .ativacao-list-actions {
+                display: grid;
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+            .ativacao-form-actions button,
+            .ativacao-list-actions button,
+            .ativacao-form-actions .ativacao-status-atual {
+                width: 100% !important;
+                margin-bottom: 0 !important;
+            }
+            .equipe-lista { border: 0; border-radius: 0; overflow: visible; }
+            .tabela-equipe { min-width: 100%; }
+            .tabela-equipe #listaIntegrantes td,
+            .tabela-equipe #listaIntegrantesDepoisEditor td {
+                min-height: 48px;
+                padding: 12px 10px 12px 48%;
+                justify-content: flex-end;
+                text-align: right;
+            }
+            .tabela-equipe #listaIntegrantes td::before,
+            .tabela-equipe #listaIntegrantesDepoisEditor td::before { width: 43%; }
+            .tabela-equipe #listaIntegrantes td[data-label="Ações"],
+            .tabela-equipe #listaIntegrantesDepoisEditor td[data-label="Ações"] {
+                padding: 12px 10px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .tabela-equipe #listaIntegrantes td[data-label="Ações"]::before,
+            .tabela-equipe #listaIntegrantesDepoisEditor td[data-label="Ações"]::before {
+                position: static;
+                width: 100%;
+            }
+            .tabela-equipe .equipe-editor tr {
+                display: grid;
+                grid-template-areas:
+                    "funcao funcao"
+                    "rg rg"
+                    "moto moto";
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+                padding: 15px;
+            }
+            .equipe-editor td {
+                display: block;
+                min-height: 0;
+                padding: 0 !important;
+                border: 0;
+                text-align: left;
+            }
+            .equipe-editor td::before { content: none; }
+            .equipe-editor label,
+            .equipe-editor-label {
+                position: static;
+                width: auto;
+                height: auto;
+                margin: 0 0 6px;
+                overflow: visible;
+                clip: auto;
+                white-space: normal;
+            }
+            .equipe-campo-funcao { grid-area: funcao; }
+            .equipe-campo-posto { grid-area: posto; }
+            .equipe-campo-nome { grid-area: nome; }
+            .equipe-campo-rg { grid-area: rg; }
+            .equipe-campo-telefone { grid-area: telefone; }
+            .equipe-campo-moto { grid-area: moto; }
+            .equipe-campo-acoes { grid-area: acoes; }
+            .equipe-editor .equipe-campo-detalhe-oculto,
+            .equipe-editor .equipe-campo-acoes { display: none !important; }
+            .equipe-busca-rg { flex-direction: column; }
+            .equipe-busca-rg > .input-padrao {
+                width: 100%;
+                min-height: var(--input-height);
+                flex: 0 0 var(--input-height);
+            }
+            .equipe-busca-rg .equipe-editor-acoes {
+                display: flex;
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            .equipe-editor #ajudaRgMembro {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border: 0;
+            }
+            .equipe-acoes button,
+            .equipe-editor-acoes button {
+                width: auto !important;
+                flex: 1 1 120px;
+                height: 48px !important;
+                min-height: 48px !important;
+                margin-bottom: 0 !important;
+                padding: 0 8px !important;
+                font-size: 0.9rem !important;
+            }
+            .modal-card { padding: 20px; }
+            .modal-actions { flex-direction: column; }
+            .modal-actions button {
+                width: 100% !important;
+                min-height: 48px !important;
+                height: 48px !important;
+                margin: 0 !important;
+                padding: 0 10px !important;
+                font-size: 0.95rem !important;
+            }
+            .modal-close-btn {
+                width: 44px !important;
+                min-width: 44px !important;
+                height: 44px !important;
+                min-height: 44px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .acoes-inline { display: flex; gap: 8px; justify-content: flex-end; }
+            .acoes-inline button {
+                width: auto !important;
+                min-height: 42px !important;
+                height: 42px !important;
+                font-size: 0.9rem !important;
+                padding: 0 12px !important;
+                margin-bottom: 0 !important;
+            }
+        }
+        @media (max-width: 560px) {
+            .tabela-equipe .equipe-editor tr {
+                grid-template-areas: "funcao" "rg" "moto";
+                grid-template-columns: 1fr;
+            }
+            .modal-overlay { padding: 10px; }
+            .modal-card { max-height: calc(100vh - 20px); }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<script src="../js/menu.js"></script>
+
+    <main>
+        <div id="secaoFormularioAtivacao" class="card-container-main visualizacao-ativacao" hidden>
+            <div class="ativacao-form-header">
+                <h2 id="tituloFormularioAtivacao" tabindex="-1">Nova Ativação de Guarnição</h2>
+                <div class="ativacao-form-actions" role="navigation" aria-label="Navegação da ativação de guarnição">
+                    <span class="filter-btn cadastro-link active ativacao-status-atual" aria-current="page">Nova Ativação</span>
+                    <button type="button" class="btn-voltar-painel" onclick="voltarAoPainelAtivacoes()">Voltar ao Painel</button>
+                </div>
+            </div>
+
+            <div id="feedbackAtivacao" class="page-feedback" aria-live="polite"></div>
+
+            <form id="escalamentoForm" novalidate>
+                <div class="grid-escalamento" style="margin-bottom: 20px;">
+                    <div>
+                        <label for="selectTipoPoliciamento">1. Tipo de Policiamento</label>
+                        <select id="selectTipoPoliciamento" class="input-padrao" required onchange="aoSelecionarTipoPoliciamento()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label id="labelSelecionarRecurso" for="selectRecurso">2. Selecionar Recurso</label>
+                        <select id="selectRecurso" class="input-padrao" required disabled aria-disabled="true" aria-describedby="ajudaSelecaoRecurso" onchange="aoSelecionarRecurso()">
+                            <option value="">Selecione primeiro o tipo de policiamento...</option>
+                        </select>
+                        <small id="ajudaSelecaoRecurso" class="campo-ajuda">O campo será liberado conforme o tipo selecionado.</small>
+                    </div>
+                    <div>
+                        <label for="selectTipoServico">3. Serviço</label>
+                        <select id="selectTipoServico" class="input-padrao" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label for="selectOS">4. Ordem de Serviço (OS)</label>
+                        <select id="selectOS" class="input-padrao" required onchange="aoSelecionarOS()">
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr style="margin: 20px 0; border-top: 1px dashed #ccc;">
+
+                <div class="equipe-cabecalho">
+                    <h3>Equipe da Guarnição</h3>
+                    <p>Digite o RG e toque em Buscar. Ao localizar o cadastro, o policial será incluído automaticamente.</p>
+                </div>
+
+                <div class="equipe-lista">
+                    <div class="table-responsive">
+                        <table class="tabela-equipe">
+                            <colgroup>
+                                <col class="col-funcao">
+                                <col class="col-rg">
+                                <col class="col-nome">
+                                <col class="col-posto">
+                                <col class="col-telefone">
+                                <col class="col-moto coluna-moto-equipe" hidden>
+                                <col class="col-acoes">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Função</th>
+                                    <th scope="col">RG</th>
+                                    <th scope="col">Nome de Guerra</th>
+                                    <th scope="col">Posto/Grad</th>
+                                    <th scope="col">Telefone</th>
+                                    <th scope="col" class="coluna-moto-equipe" hidden>Moto</th>
+                                    <th scope="col">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaIntegrantes"></tbody>
+                            <tbody id="editorEquipe" class="equipe-editor" aria-label="Adicionar policial à equipe">
+                                <tr>
+                                    <td class="equipe-campo-funcao" data-label="Função">
+                                        <span class="equipe-editor-label">Função</span>
+                                        <span id="funcaoMembro" class="equipe-funcao-badge">Comandante</span>
+                                    </td>
+                                    <!-- Antes, o editor de RG abrangia quatro colunas (colspan="4"). -->
+                                    <td class="equipe-campo-rg" data-label="RG" colspan="1">
+                                        <label for="rgMembro">RG</label>
+                                        <div class="equipe-busca-rg">
+                                            <input type="text" id="rgMembro" class="input-padrao" maxlength="6" inputmode="numeric" autocomplete="off" placeholder="Digite o RG" aria-describedby="ajudaRgMembro">
+                                            <div id="acoesEditorEquipe" class="equipe-editor-acoes">
+                                                <button type="button" id="btnAdicionarMembro" class="btn-info" onclick="adicionarIntegrante()">
+                                                    <span id="textoBtnAdicionarMembro">Buscar</span>
+                                                    <span id="loadingAdicionarMembro" class="growing-dots" aria-hidden="true" hidden><span></span><span></span><span></span></span>
+                                                </button>
+                                                <button type="button" id="btnCadastrarPolicialEquipe" class="btn-cadastrar-policial" hidden>Cadastrar</button>
+                                                <button type="button" id="btnCancelarEdicaoMembro" class="btn-secondary" onclick="cancelarEdicaoMembro()" hidden>Cancelar</button>
+                                            </div>
+                                        </div>
+                                        <small id="ajudaRgMembro" class="equipe-editor-label">Digite o RG e toque em Buscar. Se o cadastro estiver disponível, o policial será incluído automaticamente.</small>
+                                    </td>
+                                    <td class="equipe-campo-nome equipe-campo-detalhe-oculto" data-label="Nome de Guerra" aria-hidden="true">
+                                        <label for="nomeMembro">Nome de Guerra</label>
+                                        <input type="text" id="nomeMembro" class="input-padrao" readonly aria-readonly="true" placeholder="Preenchido pelo RG" hidden>
+                                        <select id="policialMembro" hidden aria-hidden="true" tabindex="-1">
+                                            <option value="">Nenhum policial selecionado</option>
+                                        </select>
+                                        <span id="ajudaPolicialMembro" class="equipe-editor-label">A consulta considera somente policiais ativos que não estejam em outra guarnição.</span>
+                                    </td>
+                                    <td class="equipe-campo-posto equipe-campo-detalhe-oculto" data-label="Posto/Grad" aria-hidden="true">
+                                        <label for="postoMembro">Posto/Grad</label>
+                                        <input type="text" id="postoMembro" class="input-padrao" readonly aria-readonly="true" placeholder="Preenchido pelo RG" hidden>
+                                    </td>
+                                    <td class="equipe-campo-telefone equipe-campo-detalhe-oculto" data-label="Telefone" aria-hidden="true">
+                                        <label for="telMembro">Telefone</label>
+                                        <input type="tel" id="telMembro" class="input-padrao" readonly aria-readonly="true" placeholder="Preenchido pelo RG" hidden>
+                                    </td>
+                                    <td class="equipe-campo-moto coluna-moto-equipe" data-label="Moto" hidden>
+                                        <label for="motoMembro">Moto dirigida</label>
+                                        <select id="motoMembro" class="input-padrao">
+                                            <option value="">Sem moto vinculada</option>
+                                        </select>
+                                    </td>
+                                    <td class="equipe-campo-acoes" data-label="Ações" aria-hidden="true"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <small id="detalhesPolicialSelecionado" class="equipe-editor-label" aria-live="polite"></small>
+                <small id="resumoEquipe" class="equipe-resumo" aria-live="polite" tabindex="-1">Nenhum policial adicionado.</small>
+
+                <button type="submit" id="btnAtivarGuarnicao" class="btn-primary" style="margin-top: 25px; width: 100%; height: 50px; font-size: 1.1rem;">
+                    <span id="textoBtnAtivarGuarnicao">Ativar Guarnição e Iniciar Turno</span>
+                    <span id="loadingAtivarGuarnicao" class="growing-dots" aria-hidden="true" hidden><span></span><span></span><span></span></span>
+                </button>
+            </form>
+        </div>
+
+        <div id="secaoPainelAtivacoes" class="container-full-width visualizacao-ativacao">
+            <div class="ativacao-list-header">
+                <h2 id="tituloPainelAtivacoes" tabindex="-1">Painel Tático - Serviços Ativos</h2>
+                <div class="ativacao-list-actions" role="navigation" aria-label="Navegação dos serviços ativos">
+                    <button type="button" class="filter-btn" onclick="window.location.href='mapa_tatico.html'">Mapa Tático</button>
+                    <button type="button" class="filter-btn cadastro-link" onclick="abrirNovaAtivacao()">Nova Ativação</button>
+                </div>
+            </div>
+
+            <div id="feedbackPainelAtivacoes" class="page-feedback" aria-live="polite"></div>
+            
+            <div class="table-responsive">
+                <table class="tabela-monitoramento" style="width: 100%;">
+                    <colgroup>
+                        <col class="col-painel-data">
+                        <col class="col-painel-recurso">
+                        <col class="col-painel-comandante">
+                        <col class="col-painel-telefone">
+                        <col class="col-painel-auxiliares">
+                        <col class="col-painel-os">
+                        <col class="col-painel-servico">
+                        <col class="col-painel-missao">
+                        <col class="col-painel-inicio">
+                        <col class="col-painel-fim">
+                        <col class="col-painel-acoes">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th scope="col">Data Ativação</th>
+                            <th scope="col">Recurso</th>
+                            <th scope="col">Comandante</th>
+                            <th scope="col">Telefone</th>
+                            <th scope="col">Auxiliares</th>
+                            <th scope="col">OS</th>
+                            <th scope="col">Tipo de Serviço</th>
+                            <th scope="col">Missão</th>
+                            <th scope="col">Hora Início</th>
+                            <th scope="col">Hora Fim</th>
+                            <th scope="col" style="text-align: center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaMonitoramento"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="modalCadastroPolicial" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloModalCadastroPolicial" aria-describedby="descricaoModalCadastroPolicial" hidden>
+        <div class="modal-card">
+            <button type="button" id="btnFecharCadastroPolicial" class="modal-close-btn" aria-label="Voltar para a ativação">&times;</button>
+            <h3 id="tituloModalCadastroPolicial">Cadastrar policial</h3>
+            <p id="descricaoModalCadastroPolicial" class="modal-description">Complete os dados abaixo. O RG digitado na ativação já foi preenchido.</p>
+
+            <div id="feedbackModalCadastroPolicial" class="page-feedback" aria-live="polite"></div>
+
+            <form id="formModalCadastroPolicial" novalidate>
+                <div class="row">
+                    <div class="col-1">
+                        <label for="postoNovoPolicial">Posto/Graduação <span class="campo-obrigatorio" aria-hidden="true">*</span></label>
+                        <select id="postoNovoPolicial" class="input-padrao" required aria-required="true">
+                            <option value="">Selecione...</option>
+                            <option value="GCM Coordenador">GCM Coordenador</option>
+                            <option value="GCM Supervisor">GCM Supervisor</option>
+                            <option value="GCM">GCM</option>
+                            <option value="SD">SD</option>
+                            <option value="CB">CB</option>
+                            <option value="3SGT">3 SGT</option>
+                            <option value="2SGT">2 SGT</option>
+                            <option value="1SGT">1 SGT</option>
+                            <option value="SUBTEN">SUBTEN</option>
+                            <option value="ASP">ASP</option>
+                            <option value="TEN">TEN</option>
+                            <option value="CAP">CAP</option>
+                            <option value="MAJ">MAJ</option>
+                            <option value="TC">TC</option>
+                            <option value="CEL">CEL</option>
+                        </select>
+                    </div>
+                    <div class="col-1">
+                        <label for="nomeNovoPolicial">Nome de Guerra <span class="campo-obrigatorio" aria-hidden="true">*</span></label>
+                        <input type="text" id="nomeNovoPolicial" class="input-padrao" maxlength="80" autocomplete="off" placeholder="Ex: SILVA" required aria-required="true">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-1">
+                        <label for="rgNovoPolicial">RG</label>
+                        <input type="text" id="rgNovoPolicial" class="input-padrao" readonly aria-readonly="true">
+                    </div>
+                    <div class="col-1">
+                        <label for="telefoneNovoPolicial">Telefone <span class="campo-obrigatorio" aria-hidden="true">*</span></label>
+                        <input type="tel" id="telefoneNovoPolicial" class="input-padrao" maxlength="15" inputmode="numeric" autocomplete="tel" placeholder="(21) 90000-0000" required aria-required="true">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="btnVoltarAtivacao" class="btn-secondary">Voltar para ativação</button>
+                    <button type="submit" id="btnSalvarCadastroPolicial" class="btn-success">
+                        <span id="textoBtnSalvarCadastroPolicial">Cadastrar e incluir</span>
+                        <span id="loadingSalvarCadastroPolicial" class="growing-dots" aria-hidden="true" hidden><span></span><span></span><span></span></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/escalamento.js"></script>
+</body>
+</html>

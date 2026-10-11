@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Cadastro de Operação Especial</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .cadastro-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .cadastro-form-header h2 {
+            margin: 0;
+        }
+
+        .cadastro-form-actions,
+        .cadastro-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: #1a237e;
+            color: white;
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.18);
+        }
+
+        .cadastro-link {
+            border-color: #3f7f50;
+            color: #3f7f50;
+        }
+
+        .cadastro-link.active {
+            background: #3f7f50;
+            border-color: #3f7f50;
+            color: white;
+        }
+
+        .filter-btn-inativa {
+            border-color: #a45f5f;
+            color: #a45f5f;
+        }
+
+        .btn-voltar-operacao {
+            background: white;
+            border: 1px solid #6c757d;
+            border-radius: 20px;
+            box-shadow: none;
+            color: #6c757d;
+            min-width: 84px;
+        }
+
+        .form-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin: -6px 0 22px;
+        }
+
+        .campo-obrigatorio {
+            color: #d32f2f;
+        }
+
+        textarea.input-padrao {
+            min-height: 100px;
+            height: auto;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .cadastro-actions button[hidden] {
+            display: none !important;
+        }
+
+        .input-padrao[readonly] {
+            background: #e9ecef;
+            color: #555;
+            cursor: not-allowed;
+            font-weight: 600;
+        }
+
+        .operacao-feedback {
+            display: none;
+            margin-bottom: 18px;
+            padding: 12px 15px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            font-size: 0.95rem;
+        }
+
+        .operacao-feedback.is-visible {
+            display: block;
+        }
+
+        .operacao-feedback.success {
+            color: #155724;
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .operacao-feedback.error {
+            color: #721c24;
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .operacoes-page button:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+            filter: none;
+        }
+
+        .growing-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            height: 18px;
+            margin-left: 8px;
+        }
+
+        .growing-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: operation-dot-grow 1.2s infinite ease-in-out;
+        }
+
+        .growing-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .growing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes operation-dot-grow {
+            0%, 60%, 100% { transform: scale(0.65); opacity: 0.45; }
+            30% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .cadastro-form-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .cadastro-form-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-operacao {
+                grid-column: 1 / -1;
+            }
+
+            .cadastro-form-actions button,
+            .cadastro-actions button {
+                margin-bottom: 0 !important;
+            }
+
+            .cadastro-actions {
+                flex-direction: column;
+            }
+
+            .cadastro-actions button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cadastro-form-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-operacao {
+                grid-column: auto;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .growing-dots span {
+                animation: none;
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu" aria-expanded="false">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<script src="../js/menu.js"></script>
+
+<main class="operacoes-page">
+    <section class="card-container-main" aria-labelledby="tituloCadastroOperacao">
+        <div class="cadastro-form-header">
+            <h2 id="tituloCadastroOperacao">Cadastrar Operação Especial</h2>
+
+            <div class="cadastro-form-actions" role="navigation" aria-label="Navegação do cadastro de operações especiais">
+                <button type="button" class="filter-btn cadastro-link active" aria-current="page">Cadastrar</button>
+                <button type="button" class="filter-btn" onclick="window.location.href='operacoes_especiais.html?filtro=Ativa'">Ativas</button>
+                <button type="button" class="filter-btn filter-btn-inativa" onclick="window.location.href='operacoes_especiais.html?filtro=Inativa'">Inativas</button>
+                <button type="button" class="btn-voltar-operacao" onclick="window.location.href='operacoes_especiais.html'">Voltar</button>
+            </div>
+        </div>
+
+        <p id="descricaoCadastroOperacao" class="form-description">
+            Cadastre a operação para disponibilizá-la no campo <strong>Vincular Operação</strong> das Ordens de Serviço.
+        </p>
+
+        <div id="cadastroOperacaoFeedback" class="operacao-feedback" aria-live="polite"></div>
+
+        <form id="operacaoForm" novalidate>
+            <div class="row operacao-identificacao-row">
+                <div class="col-2">
+                    <label for="operacaoNome">Nome da operação <span class="campo-obrigatorio" aria-hidden="true">*</span></label>
+                    <input type="text" id="operacaoNome" class="input-padrao" maxlength="120" placeholder="Ex: OPERAÇÃO VERÃO 2026" autocomplete="off" required aria-required="true">
+                </div>
+                <div class="col-1">
+                    <label for="operacaoInicio">Data de início <span class="campo-obrigatorio" aria-hidden="true">*</span></label>
+                    <input type="date" id="operacaoInicio" class="input-padrao" required aria-required="true">
+                </div>
+                <div class="col-1">
+                    <label for="operacaoFim">Data de término</label>
+                    <input type="date" id="operacaoFim" class="input-padrao" aria-describedby="ajudaOperacaoFim">
+                    <small id="ajudaOperacaoFim" style="display: block; margin-top: 5px; color: #777;">Opcional</small>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-1">
+                    <label for="operacaoDescricao">Descrição / objetivo</label>
+                    <textarea id="operacaoDescricao" class="input-padrao" maxlength="1500" placeholder="Descreva o objetivo, orientações e informações importantes da operação."></textarea>
+                </div>
+            </div>
+
+            <div class="cadastro-actions">
+                <button type="submit" id="btnSalvarOperacao" class="btn-primary">Salvar operação</button>
+                <button type="button" id="btnCancelarEdicaoOperacao" class="btn-secondary" hidden>Cancelar edição</button>
+            </div>
+        </form>
+    </section>
+</main>
+
+<script src="../js/operacoes_especiais.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# Ambiente, credenciais e dados locais
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+instance/
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.backup
+backups/
+# Arquivos gerados
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+test-results/
+playwright-report/
+.DS_Store
+*.log
+# Configurações privadas de ferramentas
+.aws/
+.codex/
+# Dumps SQL e arquivos auxiliares de bancos/backup
+*.sql
+*.sql.gz
+*.dump.gz
+*.bak
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm

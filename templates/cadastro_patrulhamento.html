@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Cadastro de Patrulhamento</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin="">
+
+    <style>
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 450px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            z-index: 1;
+        }
+
+        #map.is-drawing { cursor: crosshair; }
+
+        .cadastro-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .cadastro-form-header h2 { margin: 0; }
+
+        .cadastro-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active { background: #1a237e; color: white; box-shadow: 0 3px 7px rgba(0, 0, 0, 0.18); }
+
+        .cadastro-link {
+            border-color: #3f7f50;
+            color: #3f7f50;
+        }
+
+        .cadastro-link.active {
+            background: #3f7f50;
+            border-color: #3f7f50;
+            color: white;
+        }
+
+        .filter-btn-inativa {
+            border-color: #a45f5f;
+            color: #a45f5f;
+        }
+
+        .btn-voltar-patrulhamento {
+            background: white;
+            border: 1px solid #6c757d;
+            border-radius: 20px;
+            box-shadow: none; min-width: 84px;
+            color: #6c757d;
+        }
+
+        .polygon-instructions {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            color: #424242;
+            background: #f8f9fa;
+            border-left: 4px solid #1a237e;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .polygon-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .polygon-toolbar button {
+            height: 38px;
+            padding: 0 14px;
+            font-size: 0.85rem;
+        }
+
+        .polygon-toolbar button:disabled,
+        #btnSalvar:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            filter: none;
+        }
+
+        .polygon-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 8px;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        #contadorVertices {
+            color: #1a237e;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .vertex-marker {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            background: #d32f2f;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .vertex-marker.is-first {
+            background: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.25), 0 1px 5px rgba(0, 0, 0, 0.45);
+        }
+
+        .patrol-feedback {
+            display: none;
+            margin-bottom: 18px;
+            padding: 12px 15px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            font-size: 0.95rem;
+        }
+
+        .patrol-feedback.is-visible { display: block; }
+        .patrol-feedback.success { color: #155724; background: #d4edda; border-color: #c3e6cb; }
+        .patrol-feedback.error { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
+
+        .vertices-section {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid #eee;
+        }
+
+        .vertices-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .vertices-header label { margin: 0; color: #1a237e; }
+
+        #resumoListaVertices {
+            color: #666;
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .vertices-list {
+            max-height: 285px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+
+        .vertices-empty {
+            margin: 0;
+            padding: 20px 15px;
+            color: #777;
+            text-align: center;
+            font-size: 0.88rem;
+        }
+
+        .vertex-list-item {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .vertex-list-item:last-child { border-bottom: none; }
+
+        .vertex-list-index {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            background: #d32f2f;
+            border-radius: 50%;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .vertex-list-item.is-first .vertex-list-index { background: #1a237e; }
+
+        .vertex-coordinate {
+            min-width: 0;
+            color: #333;
+            font-family: monospace;
+            font-size: 0.82rem;
+            overflow-wrap: anywhere;
+        }
+
+        .vertex-coordinate small {
+            display: block;
+            color: #777;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 0.7rem;
+            line-height: 1.2;
+        }
+
+        .input-locked {
+            background-color: #e9ecef !important;
+            color: #555 !important;
+            cursor: not-allowed;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+            font-family: inherit;
+        }
+
+        #codigoFinal {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #1a237e !important;
+            letter-spacing: 1px;
+        }
+
+        /* Controle legado de edição: permanece preservado, mas não é exibido sem fluxo de edição ativo. */
+
+        @media (max-width: 768px) {
+            .cadastro-form-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .cadastro-form-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-patrulhamento {
+                grid-column: 1 / -1;
+            }
+
+            .cadastro-form-actions button { margin-bottom: 0 !important; }
+            .polygon-toolbar { flex-direction: column; }
+            .polygon-meta { flex-direction: column; }
+            .vertex-list-item { grid-template-columns: 34px 1fr; }
+            .vertex-coordinate:last-child { grid-column: 2; }
+            #map { min-height: 360px; }
+        }
+
+        @media (max-width: 380px) {
+            .cadastro-form-actions { grid-template-columns: 1fr; }
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-patrulhamento { grid-column: auto; }
+        }
+
+        /* Resumo compacto dos dados automáticos, preservando os campos do cadastro. */
+        .cadastro-codigo { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+        .cadastro-codigo label { margin: 0; font-size: 0.82rem; color: #666; }
+        .cadastro-codigo #codigoFinal { width: 80px; height: 26px; padding: 0; border: 0; border-radius: 0; background: transparent !important; text-align: left; font-size: 0.85rem; letter-spacing: 0; cursor: default; }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+<script src="../js/menu.js"></script>
+
+    <main>
+        <div class="card-container-main">
+            <div class="cadastro-form-header">
+                <h2>Cadastrar Ponto de Patrulhamento</h2>
+                <div class="cadastro-form-actions" role="navigation" aria-label="Navegação do cadastro de patrulhamento">
+                    <button type="button" class="filter-btn cadastro-link active" aria-current="page">Cadastrar</button>
+                    <button type="button" class="filter-btn" onclick="window.location.href='patrulhamento.html?filtro=Ativo'">Ativas</button>
+                    <button type="button" class="filter-btn filter-btn-inativa" onclick="window.location.href='patrulhamento.html?filtro=Inativo'">Inativas</button>
+                    <button type="button" class="btn-voltar-patrulhamento" onclick="window.location.href='patrulhamento.html'">Voltar</button>
+                </div>
+            </div>
+
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 20px;">
+                Desenhe e feche no mapa a área que será percorrida pela viatura.
+            </p>
+
+            <div id="feedbackPatrulha" class="patrol-feedback" aria-live="polite"></div>
+
+            <div class="row" style="align-items: stretch;">
+                <div class="col-1">
+                    <form id="formPatrulha" style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                        <input type="hidden" id="editIndex" value="-1">
+
+                        <div>
+                            <div class="cadastro-codigo">
+                                <label for="codigoFinal">Código do ponto:</label>
+                                <input type="text" id="codigoFinal" class="input-padrao input-locked" readonly placeholder="...">
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label for="apelido">Nome do Ponto (Ex: Praça Central)</label>
+                                <input type="text" id="apelido" class="input-padrao" placeholder="Identificação Tática" required>
+                            </div>
+
+                            <div class="polygon-instructions">
+                                <strong>Como desenhar:</strong> clique no mapa para marcar os limites da área. Use de 3 a 20 pontos e feche o polígono clicando no primeiro ponto azul ou em “Fechar polígono”.
+                            </div>
+
+                            <div class="vertices-section">
+                                <div class="vertices-header">
+                                    <label>Pontos do Polígono</label>
+                                    <span id="resumoListaVertices">0 pontos definidos</span>
+                                </div>
+                                <div id="listaVertices" class="vertices-list" role="list" aria-live="polite">
+                                    <p class="vertices-empty">Clique no mapa para adicionar o primeiro ponto.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <button type="submit" id="btnSalvar" class="btn-primary" style="flex: 1;" disabled>Salvar Área</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="col-1" style="display: flex; flex-direction: column;">
+                    <label>Área de Patrulhamento</label>
+                    <div id="map" style="flex: 1;"></div>
+                    <div class="polygon-toolbar" aria-label="Controles do polígono">
+                        <button type="button" id="btnDesfazerVertice" class="btn-secondary" disabled>Desfazer último ponto</button>
+                        <button type="button" id="btnLimparPoligono" class="btn-danger" disabled>Limpar polígono</button>
+                        <button type="button" id="btnFecharPoligono" class="btn-primary" disabled>Fechar polígono</button>
+                    </div>
+                    <div class="polygon-meta">
+                        <span id="contadorVertices">0/20 pontos</span>
+                        <span>Os pontos podem ser arrastados para ajuste fino.</span>
+                    </div>
+                    <small id="statusMapa" style="display: block; text-align: center; margin-top: 5px; color: #666; font-style: italic;">
+                        Clique no mapa para adicionar o primeiro ponto.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="../js/patrulhamento.js"></script>
+</body>
+</html>

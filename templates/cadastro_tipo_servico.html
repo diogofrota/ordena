@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORDENA - Cadastro de Tipo de Serviço</title>
+    <link rel="icon" href="../assets/images/ordenar.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .cadastro-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .cadastro-form-header h2 {
+            margin: 0;
+        }
+        .cadastro-form-actions,
+        .tipo-servico-submit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .tipo-servico-form-row {
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 0;
+        }
+        .tipo-servico-nome {
+            flex: 1 1 260px;
+        }
+        .tipo-servico-descricao {
+            flex: 2 1 420px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #1a237e;
+            background: white;
+            color: #1a237e;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .filter-btn.active {
+            background: #1a237e;
+            color: white;
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.18);
+        }
+        .cadastro-link {
+            border-color: #3f7f50;
+            color: #3f7f50;
+        }
+        .cadastro-link.active {
+            background: #3f7f50;
+            border-color: #3f7f50;
+            color: white;
+        }
+        .filter-btn-inativa {
+            border-color: #a45f5f;
+            color: #a45f5f;
+        }
+        .btn-voltar-tipo-servico {
+            background: white;
+            border: 1px solid #6c757d;
+            border-radius: 20px;
+            box-shadow: none;
+            color: #6c757d;
+            min-width: 84px;
+        }
+        textarea.input-padrao {
+            min-height: var(--input-height);
+            resize: vertical;
+        }
+        .tipo-servico-submit-actions {
+            flex: 0 0 auto;
+        }
+        .tipo-servico-submit-actions .btn-primary {
+            min-width: 180px;
+        }
+
+        @media (max-width: 768px) {
+            .cadastro-form-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .cadastro-form-actions {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                width: 100%;
+            }
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-tipo-servico {
+                grid-column: 1 / -1;
+            }
+            .cadastro-form-actions button,
+            .tipo-servico-submit-actions button {
+                margin-bottom: 0 !important;
+            }
+            .tipo-servico-submit-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .cadastro-form-actions {
+                grid-template-columns: 1fr;
+            }
+            .cadastro-form-actions .cadastro-link,
+            .cadastro-form-actions .btn-voltar-tipo-servico {
+                grid-column: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<script src="../js/storage_normalizer.js"></script>
+<nav>
+    <div class="logo">ORDENA</div>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir Menu">☰</button>
+</nav>
+
+<div id="sidebar" class="sidebar"></div>
+
+<div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+
+<script src="../js/menu.js"></script>
+
+<main>
+    <div class="card-container-main">
+        <div class="cadastro-form-header">
+            <h2 id="tituloForm">Cadastrar Tipo de Serviço</h2>
+            <div class="cadastro-form-actions" role="navigation" aria-label="Navegação do cadastro de tipos de serviço">
+                <button type="button" class="filter-btn cadastro-link active" aria-current="page">Cadastrar</button>
+                <button type="button" class="filter-btn" onclick="window.location.href='tipos_servico.html?filtro=Ativa'">Ativos</button>
+                <button type="button" class="filter-btn filter-btn-inativa" onclick="window.location.href='tipos_servico.html?filtro=Inativa'">Inativos</button>
+                <button type="button" class="btn-voltar-tipo-servico" onclick="voltarParaListaTiposServico()">Voltar</button>
+            </div>
+        </div>
+
+        <p style="color:#666; font-size:0.95rem; margin-top:-6px;">Cadastre os tipos que serão usados no campo "Tipo" das Ordens de Serviço.</p>
+
+        <form id="tipoServicoForm">
+            <div class="row tipo-servico-form-row">
+                <div class="col-1 tipo-servico-nome">
+                    <label for="nomeServico">Nome do Serviço</label>
+                    <input type="text" id="nomeServico" class="input-padrao" placeholder="Ex: ORDINÁRIA" required style="text-transform: uppercase;">
+                </div>
+
+                <div class="col-2 tipo-servico-descricao">
+                    <label for="descricaoServico">Descrição</label>
+                    <textarea id="descricaoServico" class="input-padrao" rows="1" placeholder="Descreva o tipo de serviço..." required></textarea>
+                </div>
+
+                <div class="tipo-servico-submit-actions">
+                    <button type="submit" id="btnSalvar" class="btn-primary">Salvar Registro</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script src="../js/tipos_servico.js"></script>
+</body>
+</html>
