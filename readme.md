@@ -1,227 +1,185 @@
-# Ordena — Gestão de Operações
+# 🚓 ORDENA - Sistema de Gestão de Operações (SGO)
 
-O Ordena organiza recursos, efetivo, locais, ordens de serviço e ativações operacionais de uma prefeitura. A interface HTML/CSS/JavaScript existente foi mantida e integrada a um backend Python/Flask com banco persistente e autenticação.
+> **Versão:** 1.0.0 (Protótipo/MVP)
+> **Status:** Homologação de Regra de Negócio
+> **Tecnologia:** HTML5, CSS3, JavaScript (ES6+), LocalStorage
 
-Todos os usuários têm as mesmas permissões funcionais. Cada conta pertence a **uma prefeitura e uma secretaria/setor administrativo** e acessa somente os dados dessa prefeitura. Secretarias da mesma prefeitura compartilham seus dados operacionais. Não há cadastro público.
+## 📋 Sobre o Projeto
 
-## Funcionalidades
+O **ORDENA** é uma plataforma de comando e controle desenvolvida para gerenciar o planejamento tático, a frota de viaturas, o cadastro de pontos sensíveis e a execução de ordens de serviço (OS) de forças de segurança.
 
-- Painel de indicadores; cadastro e inativação de carros, motos e policiais.
-- Pontos de baseamento e áreas de patrulhamento com mapas e polígonos.
-- Tipos de serviço, ordens com atividades e horários, cópia e impressão de OS.
-- Operações especiais, períodos, avaliações e consulta de pontos vinculados.
-- Ativação de equipes/recursos, baixa manual, histórico e relatórios de impressão/PDF.
-- Mapa tático com programação da OS e monitoramento GPS pela API Cecoco, comparando a posição da viatura com a atividade planejada no navegador.
-- Login/logout, telefone do perfil e troca da própria senha; troca obrigatória no primeiro acesso.
-- Cabines e setores operacionais mantêm o suporte legado, mas não possuem telas próprias de cadastro.
+Este código atual serve como **Prova de Conceito (PoC)** para validar a lógica de imutabilidade de ordens, validação de choques de horário e monitoramento em tempo real antes da implementação em infraestrutura de servidor.
 
-## Tecnologias e estrutura
+---
 
-Python 3.9 ou superior (prefira uma versão suportada atual em produção), Flask, Flask-SQLAlchemy/SQLAlchemy, Flask-WTF para CSRF, Alembic para migrações, PostgreSQL/psycopg e Gunicorn. SQLite serve ao desenvolvimento e aos testes locais. HTML, CSS e JavaScript continuam sem framework; Leaflet/OpenStreetMap, Nominatim, Chart.js e html2pdf.js exigem internet. O CSS próprio, inclusive Growing Dots, foi reutilizado; o projeto não usa Bootstrap.
+## 🛠 Arquitetura e Tecnologias
 
-```text
-backend/             configuração, modelos, rotas, validação/transações e CLI
-migrations/          esquema versionado (fonte de referência)
-templates/           páginas existentes e login.html
-js/                  módulos existentes, api_storage.js e login.js
-css/, assets/        identidade visual existente
-wsgi.py              entrada WSGI
-gunicorn.conf.py     configuração do servidor de produção
-requirements.txt     dependências diretas com versões compatíveis
-tests/               testes Python e JavaScript
-docs/                banco, implantação, análise e verificações
-instance/            banco local, ignorado pelo Git
+O sistema roda inteiramente no navegador do cliente, utilizando o `localStorage` como banco de dados temporário.
+
+* **Frontend:** HTML5 Semântico, CSS3 (Responsivo/Grid/Flexbox).
+* **Lógica:** Vanilla JavaScript (Sem frameworks).
+* **Persistência:** `window.localStorage`.
+* **Mapas & Geocoding:** Leaflet.js + OpenStreetMap + Nominatim API.
+* **Relatórios:** jsPDF + jsPDF-AutoTable.
+
+---
+
+## 🧠 Regras de Negócio e Lógica (Passo a Passo)
+
+Esta seção detalha a lógica que **deve ser replicada** no backend ao migrar para produção.
+
+### 1. Gestão de Ordens de Serviço (OS) - `os.js`
+
+A lógica central do sistema baseia-se na **Imutabilidade e Versionamento**.
+
+* **Criação:**
+1. O sistema gera um ID sequencial automático.
+2. **Validação de Conflito:** Ao adicionar uma atividade (ex: Patrulhamento das 10h às 12h), o algoritmo verifica se o intervalo colide com qualquer outra atividade já listada na mesma OS.
+3. **Ordenação:** As atividades são automaticamente reordenadas cronologicamente (08:00 antes de 10:00) independente da ordem de inserção.
+4. **Status Inicial:** A OS nasce com status `Ativa` e `dataCriacao`.
+
+
+* **Edição (Versionamento):**
+1. **NUNCA se altera um registro salvo.**
+2. Ao editar a OS `1001`, o sistema marca a OS `1001` como `Inativa` (insere `dataEncerramento`).
+3. Cria-se uma nova OS (ex: `1002`) contendo os dados novos, mantendo um vínculo lógico (`osOrigem: 1001`) para rastreabilidade.
+
+
+* **Encerramento Manual:**
+1. O usuário pode encerrar uma OS sem criar nova versão. Isso apenas muda o status para `Inativa` e data o fim.
+
+
+
+### 2. Gestão de Frota e Locais - `cadastro.js` / `enderecos.js`
+
+Utiliza-se o conceito de **Soft Delete** (Exclusão Lógica).
+
+* **Cadastro:** Validação de campos obrigatórios.
+* **Ação de Excluir:**
+* O sistema **não deleta** o registro do banco de dados.
+* Ele altera a flag `status` de `'Ativa'` para `'Inativa'`.
+* **Nos Selects (Dropdowns):** Apenas registros com `status: 'Ativa'` são mostrados para novas operações, mas o histórico antigo preserva os dados das viaturas/locais inativados.
+
+
+
+### 3. Inteligência Geográfica - `enderecos.js`
+
+* **Geocodificação Reversa:** Ao arrastar o pino no mapa, o sistema captura `lat/lng` e consulta a API do Nominatim para preencher automaticamente: Rua, Bairro e Cidade.
+* **Visualização:** O sistema permite abrir um modal (janela) para visualizar a posição exata de um local cadastrado sem sair da tela de listagem.
+
+### 4. Ativação de Guarnição (Escalamento) - `escalamento.js`
+
+Vincula 3 entidades: **Viatura + Ordem de Serviço + Equipe Humana**.
+
+* **Equipe Dinâmica:**
+* Comandante é obrigatório.
+* Permite adição dinâmica de até 5 auxiliares (total 6 integrantes).
+* Armazena: Posto/Graduação, Nome de Guerra e RG.
+
+
+* **Monitoramento Simulado:**
+* Um `setInterval` roda a cada 30 segundos.
+* Ele compara a `Hora Atual` do sistema com os intervalos das atividades da OS vinculada.
+* **Lógica:** Se `Hora Atual` estiver dentro de `Inicio` e `Fim` de uma atividade -> Status: **"EM POSIÇÃO"** (Verde). Caso contrário -> **"FORA DE POSIÇÃO"** (Vermelho).
+
+
+* **Finalização de Turno:**
+* Remove a equipe da tabela de "Ativos" (`escalasAtivas`).
+* Move os dados para a tabela de "Histórico" (`historicoEscalas`), adicionando a `dataFim` real do término do serviço.
+
+
+
+---
+
+## 💾 Estrutura de Dados (Schema JSON)
+
+Ao migrar para SQL/NoSQL, estas são as estruturas de dados esperadas:
+
+**1. Viaturas (`viaturas`)**
+
+```json
+{
+  "prefixo": "String (PK)",
+  "placa": "String",
+  "radio": "String",
+  "status": "String ('Ativa' | 'Inativa')"
+}
+
 ```
 
-O menu permanece em `js/menu.js`. O adaptador `js/api_storage.js` mantém um cache **em memória**, carregado pelo Flask antes dos scripts das páginas. As alterações aguardam a API autenticada; o navegador deixa de ser o armazenamento principal. Impressões usam dados temporários em `sessionStorage`, separados por conta/prefeitura. O `localStorage` antigo permanece intacto e não é importado automaticamente.
+**2. Locais (`locaisCadastrados`)**
 
-## Monitoramento GPS no mapa tático
+```json
+{
+  "id": "Timestamp (PK)",
+  "apelido": "String",
+  "rua": "String",
+  "bairro": "String",
+  "lat": "Float",
+  "lng": "Float",
+  "status": "String ('Ativo' | 'Inativo')"
+}
 
-O controle de monitoramento dos cartões consulta diretamente `GET https://cecoco-api-production.up.railway.app/recursos`. A API é pública, permite acesso por CORS e é chamada sem credenciais. O campo `radio` cadastrado na viatura deve corresponder ao campo `identificador` do JSON; a posição usa `latitude` e `longitude`, e a atualidade usa `ultima_coleta`.
-
-Ao ligar o primeiro cartão, a consulta é imediata. Enquanto houver cartões ligados, uma consulta compartilhada atualiza as equipes monitoradas a cada **três minutos**. O navegador seleciona os identificadores das viaturas da ativação e compara as posições com a atividade atual da OS. Para baseamento, vale um raio de **20 metros** em torno do ponto, independentemente do raio exibido no mapa. Para patrulhamento, a posição deve estar no interior ou na borda do polígono, sem margem externa.
-
-Os cartões indicam **NÃO MONITORADO**, **NO PONTO**, **FORA DO PONTO** ou **SEM DADOS**, com o indicador de carregamento existente durante a consulta. Identificador ausente, coordenadas inválidas, falha da API ou `ultima_coleta` com mais de dez minutos resultam em **SEM DADOS**. Desligar o último cartão interrompe as consultas. O monitoramento funciona somente enquanto a página está aberta; as posições e comparações GPS não são processadas pelo backend nem gravadas no banco.
-
-## Instalação local
-
-Pré-requisitos: Python com `venv` e `pip`; Node.js para os testes JavaScript. PostgreSQL é obrigatório em produção.
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Cole a chave gerada em `SECRET_KEY` no `.env`; não use o marcador do exemplo e não publique a chave. O arquivo `.env` é lido pela aplicação e ignorado pelo Git.
+**3. Ordens de Serviço (`ordensServico`)**
 
-| Variável | Finalidade |
-| --- | --- |
-| `ORDENA_ENV` | `development`, `testing` ou `production`; padrão `development` |
-| `SECRET_KEY` | Chave aleatória de sessão e CSRF; obrigatória, 32+ caracteres em produção |
-| `DATABASE_URL` | Desenvolvimento: `sqlite:///ordena.db` (em `instance/`). Produção: `postgresql+psycopg://usuario:senha@host:5432/ordena` |
-| `TRUSTED_HOSTS` | Hosts separados por vírgula; obrigatório em produção, sem protocolo ou caminho |
-| `GUNICORN_BIND` | Padrão `127.0.0.1:8000`; ajuste conforme o proxy/plataforma |
-| `GUNICORN_WORKERS` | Padrão `2`; dimensionar conforme a infraestrutura |
-| `ORDENA_TEST_DATABASE_URL` | Opcional, exclusivamente PostgreSQL descartável cujo nome contenha `ordena_test` |
+```json
+{
+  "numero": "Integer (PK)",
+  "osOrigem": "Integer (FK - Auto Referência)",
+  "nomeOS": "String",
+  "inicioGeral": "Time",
+  "terminoGeral": "Time",
+  "prescricoes": "Text",
+  "status": "String ('Ativa' | 'Inativa')",
+  "dataCriacao": "DateTime",
+  "dataEncerramento": "DateTime",
+  "atividades": [
+    { "tipo": "String", "inicio": "Time", "fim": "Time", "local": "String" }
+  ]
+}
 
-Senhas com caracteres reservados na URL do banco precisam de codificação de URL. Configure TLS do PostgreSQL conforme seu provedor, por exemplo com `?sslmode=verify-full` e o certificado apropriado.
-
-### Banco e migrações
-
-No PostgreSQL, crie antes um banco vazio e um usuário próprio da aplicação, usando a administração do seu ambiente. Não use o superusuário do banco como conta da aplicação.
-
-```bash
-flask --app wsgi:app db-upgrade
-flask --app wsgi:app admin-cadastrar
-flask --app wsgi:app admin-listar
-flask --app wsgi:app run --host 127.0.0.1 --port 8765
 ```
 
-Acesse `http://127.0.0.1:8765/`. O comando `admin-cadastrar` solicita prefeitura, secretaria/setor, nome, e-mail e senha temporária de 12 a 128 caracteres. A senha é digitada de modo oculto, com confirmação, sem argumentos de terminal. Instituições de mesmo nome são reutilizadas; e-mails são únicos em todo o sistema. Não há senha inicial fixa.
+**4. Escalas/Histórico (`escalasAtivas` / `historicoEscalas`)**
 
-`db-upgrade` aplica as migrações até `head`, inclusive numa instalação vazia, e pode ser repetido. Não há `create_all` em produção. A primeira migração apenas cria estruturas; se um banco já possuir tabelas incompatíveis, pare e revise a origem dele, sem usar `stamp` ou apagar dados para contornar o erro. Downgrades destrutivos estão desabilitados.
+```json
+{
+  "id": "Timestamp (PK)",
+  "dataInicio": "DateTime",
+  "dataFim": "DateTime",
+  "prefixo": "String (FK)",
+  "osNumero": "Integer (FK)",
+  "equipe": [
+    { "funcao": "Cmd/Aux", "posto": "String", "nome": "String", "rg": "String" }
+  ]
+}
 
-SQL para revisão é **gerado a partir das mesmas migrações**, no dialeto de `DATABASE_URL`, sem executar:
-
-```bash
-flask --app wsgi:app db-sql > /tmp/ordena-schema.sql
 ```
 
-Não mantenha esse arquivo como uma segunda definição independente do esquema. Para uma futura evolução, gere em desenvolvimento com `flask --app wsgi:app db-revision --mensagem "Descrição da mudança"` e revise o script antes de aplicá-lo; consulte [o banco](docs/banco.md).
+---
 
-### Login, primeiro acesso e administração
+## 🚀 Roteiro para Migração em Produção
 
-O primeiro login abre Meu Perfil e exige a senha atual e uma nova senha diferente de 12 a 128 caracteres. Até a troca, as páginas e APIs de negócio permanecem bloqueadas. Depois da confirmação, abra Início pelo menu. Trocas de senha revogam as demais sessões; logout revoga a sessão atual no servidor. Cookies são HttpOnly/SameSite=Lax e Secure em produção HTTPS; sessões expiram em oito horas.
+Para colocar este sistema em ambiente real, as seguintes alterações são mandatórias:
 
-```bash
-flask --app wsgi:app admin-usuario operador@example.test --inativar
-flask --app wsgi:app admin-usuario operador@example.test --reativar
-flask --app wsgi:app admin-usuario operador@example.test --redefinir-senha
-```
+1. **Backend:** Substituir `localStorage` por uma API RESTful (Node.js, Python/Django ou Java/Spring).
+2. **Banco de Dados:** Implementar PostgreSQL ou MySQL.
+3. **Autenticação:** Criar sistema de Login (JWT) para garantir que apenas oficiais autorizados criem OS.
+4. **Mapas:** Para alto volume de acessos, substituir a API gratuita do Nominatim por uma chave paga do Google Maps API ou Mapbox, para evitar bloqueios.
+5. **Segurança:** Implementar HTTPS e logs de auditoria no servidor (quem criou, quem inativou).
 
-A redefinição solicita uma senha temporária oculta e reativa a exigência de troca; não reativa uma conta inativa automaticamente. As ações invalidam as sessões anteriores. Consulta SQL e relações estão em [docs/banco.md](docs/banco.md); senhas nunca devem ser gravadas em texto puro por SQL.
+---
 
-## Produção
+## 📄 Como rodar este protótipo
 
-Configure `ORDENA_ENV=production`, PostgreSQL, uma chave aleatória e `TRUSTED_HOSTS` com o domínio real. A inicialização recusa SQLite, a chave de exemplo e hosts ausentes nesse ambiente. Não habilite debug.
+1. Baixe todos os arquivos (`.html`, `.css`, `.js`) para uma mesma pasta.
+2. Certifique-se de que há conexão com a internet (para carregar os mapas do OpenStreetMap e a biblioteca jsPDF).
+3. Abra o arquivo `index.html` em qualquer navegador moderno (Chrome, Edge, Firefox).
+4. **Nota:** Se precisar limpar os dados para testes, use o comando `localStorage.clear()` no console do navegador (F12).
 
-```bash
-flask --app wsgi:app db-upgrade
-gunicorn --config gunicorn.conf.py wsgi:app
-```
+---
 
-Use HTTPS em um proxy reverso/plataforma e encaminhe as requisições ao Gunicorn. **Encaminhe também `/templates`, `/js` e `/api` ao Flask**: não publique `templates/` como arquivos estáticos, pois a autenticação e a carga inicial são feitas no servidor. Não sirva a raiz do repositório com `python -m http.server` em produção. Os únicos caminhos públicos são `/login`, `/healthz`, o script de login, CSS compartilhado e favicon. `/healthz` informa apenas a disponibilidade HTTP, sem testar o banco.
-
-Não confie em cabeçalhos de proxy recebidos diretamente da internet. O limitador usa o IP da conexão e o e-mail: atrás de proxy, o limite por IP será compartilhado até configurar uma cadeia confiável de proxies. Consulte [implantação](docs/implantacao.md), com backup e restauração. Não houve publicação no GitHub nem implantação externa.
-
-As configurações seguem as orientações oficiais de [segurança do Flask](https://flask.palletsprojects.com/en/stable/web-security/) e [servidores de produção](https://flask.palletsprojects.com/en/stable/deploying/).
-
-## Testes
-
-```bash
-python -m pytest tests/test_backend.py -q
-node --test tests/*.test.js
-for arquivo in js/*.js; do node --check "$arquivo" || exit 1; done
-```
-
-A suíte Python usa bancos SQLite temporários, cria o esquema por migração e exercita o cadastro administrativo. Para testar PostgreSQL, crie **um banco descartável isolado**, com nome contendo `ordena_test`, e configure `ORDENA_TEST_DATABASE_URL` somente no processo de teste. A suíte limpa os registros desse banco entre testes. **Nunca aponte essa variável para um banco real**, nem execute os testes com credenciais de produção.
-
-Resultados e alcance das verificações estão em [docs/verificacao.md](docs/verificacao.md).
-
-## Arquitetura implementada
-
-```mermaid
-flowchart LR
-    U[Usuário] --> UI[HTML / CSS / JavaScript existente]
-    UI -->|Cookie + CSRF / leitura e gravação| F[Flask]
-    F --> A[Autenticação / sessão revogável / senha temporária]
-    F --> V[Validação / isolamento por prefeitura / transação com versão]
-    A --> DB[(PostgreSQL em produção)]
-    V --> DB
-    CLI[Comandos administrativos locais] --> F
-    MIG[Migrações Alembic] --> DB
-    UI --> EXT[Mapas / gráficos / PDF externos]
-    UI -->|GPS a cada três minutos| GPS[API Cecoco / recursos]
-```
-
-## Modelo de dados implementado
-
-`dados` preserva documentos operacionais existentes: atividades de OS, equipes, coordenadas, avaliações e snapshots. Os relacionamentos institucionais e a vinculação da ativação à OS têm chaves estrangeiras; os vínculos internos dos documentos são descritos em [docs/banco.md](docs/banco.md).
-
-```mermaid
-erDiagram
-    prefeituras ||--o{ secretarias : possui
-    prefeituras ||--o{ usuarios : vincula
-    secretarias ||--o{ usuarios : lota
-    usuarios ||--o{ sessoes : autentica
-    usuarios ||--o{ auditoria : registra
-    prefeituras ||--o{ auditoria : delimita
-    prefeituras ||--o{ viaturas : possui
-    prefeituras ||--o{ policiais : possui
-    prefeituras ||--o{ cabines : possui
-    prefeituras ||--o{ setores_operacionais : possui
-    prefeituras ||--o{ baseamentos : possui
-    prefeituras ||--o{ patrulhamentos : possui
-    prefeituras ||--o{ tipos_servico : possui
-    prefeituras ||--o{ operacoes_especiais : possui
-    prefeituras ||--o{ ordens_servico : possui
-    prefeituras ||--o{ ativacoes : possui
-    prefeituras ||--o{ historico_ativacoes : possui
-    ordens_servico ||--o{ ativacoes : referencia
-    ordens_servico ||--o{ historico_ativacoes : referencia
-    prefeituras { int id PK string nome UK int versao }
-    secretarias { int id PK int prefeitura_id FK string nome }
-    usuarios { int id PK int prefeitura_id FK int secretaria_id FK string email UK string senha_hash boolean senha_temporaria boolean ativo int sessao_versao }
-    sessoes { string id PK int usuario_id FK datetime expira_em }
-    limites_login { string chave PK int tentativas datetime inicio }
-    auditoria { int id PK int prefeitura_id FK int usuario_id FK datetime criado_em string acao json colecoes }
-    viaturas { int id PK int prefeitura_id FK string chave json dados }
-    policiais { int id PK int prefeitura_id FK string chave json dados }
-    cabines { int id PK int prefeitura_id FK string chave json dados }
-    setores_operacionais { int id PK int prefeitura_id FK string chave json dados }
-    baseamentos { int id PK int prefeitura_id FK string chave json dados }
-    patrulhamentos { int id PK int prefeitura_id FK string chave json dados }
-    tipos_servico { int id PK int prefeitura_id FK string chave json dados }
-    operacoes_especiais { int id PK int prefeitura_id FK string chave json dados }
-    ordens_servico { int id PK int prefeitura_id FK string chave json dados }
-    ativacoes { int id PK int prefeitura_id FK string chave string os_chave FK boolean arquivado json dados }
-    historico_ativacoes { int id PK int prefeitura_id FK string chave string os_chave FK json dados }
-```
-
-Todas as tabelas operacionais também possuem `posicao` e `arquivado`; a combinação `(prefeitura_id, chave)` é única. A FK de OS e a FK de secretaria são compostas e impedem vínculos entre prefeituras.
-
-## Fluxo de autenticação implementado
-
-```mermaid
-flowchart TD
-    P[Página ou API protegida] --> S{Sessão válida e conta ativa?}
-    S -->|Não| L[Login / API retorna 401]
-    L --> C[CSRF + limite de tentativas + verificação do hash]
-    C -->|Falha| E[Erro genérico ou limite 429]
-    C -->|Sucesso| T{Senha temporária?}
-    S -->|Sim| T
-    T -->|Sim| M[Meu Perfil / negócio bloqueado]
-    M --> N[Senha atual + nova senha válida]
-    N --> R[Grava hash / revoga outras sessões]
-    R --> B[Negócio da prefeitura vinculada]
-    T -->|Não| B
-    B --> O[Logout POST com CSRF]
-    O --> X[Revoga sessão no banco / limpa cookie]
-    X --> L
-```
-
-## Limitações e configuração externa
-
-- A migração é incremental: atividades, avaliações e equipes continuam documentos JSON, sem tabelas próprias. Não há integridade SQL para todos os vínculos internos, apenas validação do servidor para os acessos implementados; não edite JSON diretamente em produção.
-- O modelo de compatibilidade envia coleções inteiras e usa uma versão global por prefeitura. Edições simultâneas detectadas exigem atualizar a tela e repetir a alteração. Para volumes grandes, serão necessários endpoints por registro e paginação.
-- A interface legada usa interpolação HTML em alguns módulos. A API rejeita textos com `<`, `>`, `&`, aspas, crase, barra invertida e NUL para bloquear injeção nesses caminhos. Uma evolução localizada desses renderizadores permitirá ampliar os caracteres aceitos com segurança.
-- A auditoria registra usuário, instante, ação e coleções, sem snapshots completos de antes/depois.
-- O mapa exibe a programação carregada ao abrir a página; alterações feitas em outras sessões exigem recarregamento. As posições GPS são atualizadas pela consulta externa enquanto o monitoramento estiver ligado nessa página.
-- O navegador antigo não é importado automaticamente. Os dados antigos foram preservados; uma importação deve ser revisada e vinculada explicitamente à prefeitura correta.
-- Nenhum banco operacional real, usuário real, credencial de produção, domínio, proxy HTTPS, serviço de hospedagem ou backup agendado foi configurado. A administração deve realizar esses passos antes do uso real.
-- Bibliotecas externas são carregadas por CDN conforme o frontend original; disponibilidade offline e hospedagem local desses ativos não foram implementadas.
-
-A [documentação original](docs/prototipo_original.md) permanece como registro do protótipo; seus comandos de servidor estático e descrição de armazenamento local não se aplicam à execução autenticada. Use este README para a aplicação atual. No GitHub, os arquivos antigos na raiz foram preservados para manter o protótipo existente no GitHub Pages. A versão atual com autenticação e banco deve ser executada pelo Flask/Gunicorn; páginas estáticas não substituem esse servidor.
+> **Desenvolvido para:** Secretaria de Segurança / Planejamento Operacional.
+> **Objetivo:** Validação de fluxo operacional.
